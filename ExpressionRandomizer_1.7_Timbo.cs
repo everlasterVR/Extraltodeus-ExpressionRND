@@ -330,11 +330,6 @@ namespace extraltodeuslExpRandPlugin
             _onlyShowActiveJsb.setCallbackFunction += val => OnFilterChanged();
             CreateToggle(_onlyShowActiveJsb, true);
 
-            // CreateSlider(_posX, true);
-            // CreateSlider(_posY, true);
-            // CreateSlider(_sizeX, true);
-            // CreateSlider(_sizeY, true);
-
             // ******* MORPHS HEADER ***********
             {
                 var filterHeaderJss = new JSONStorableString("MorphsHeader", "");
