@@ -78,7 +78,6 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ExpressionRandomizer_1.7_Timbo.cs" />
-    <Compile Include="ExpressionRandomizer_1.7_Timbo2.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include=".gitignore" />
@@ -86,6 +85,7 @@
     <None Include="README.md" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include=".editorconfig" />
     <Content Include="scripts\package.sh" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
