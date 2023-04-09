@@ -115,11 +115,6 @@ namespace extraltodeuslExpRandPlugin
 
         JSONStorableFloat _triggerChanceJsf;
 
-        JSONStorableFloat _posX;
-        JSONStorableFloat _posY;
-        JSONStorableFloat _sizeX;
-        JSONStorableFloat _sizeY;
-
         const string FILTER_DEFAULT_VAL = "Filter morphs...";
 
         void Start()
@@ -236,11 +231,6 @@ namespace extraltodeuslExpRandPlugin
                     _morphModels.Add(morphModel);
                 }
             }
-
-            _posX = new JSONStorableFloat("posX", 0, -3000, 3000);
-            _posY = new JSONStorableFloat("posY", 0, -3000, 3000);
-            _sizeX = new JSONStorableFloat("sizeX", 0, -2000, 2000);
-            _sizeY = new JSONStorableFloat("sizeY", 0, -2000, 2000);
 
 #endregion
 
@@ -493,7 +483,6 @@ namespace extraltodeuslExpRandPlugin
             rectTransform.pivot = new Vector2(0, 0);
             rectTransform.anchoredPosition = new Vector2(936, -208);
             rectTransform.sizeDelta = new Vector2(-940, 63);
-            SetDevUISliderCallbacks(rectTransform);
             var button = buttonTransform.GetComponent<UIDynamicButton>();
             button.label = "Clear";
             button.buttonColor = new Color(0.6f, 0.3f, 0.3f, 1f);
@@ -611,49 +600,6 @@ namespace extraltodeuslExpRandPlugin
                     SetUIDynamicToggleVisibility(morphModel.Toggle, false);
                 }
             }
-        }
-
-        void SetDevUISliderCallbacks(RectTransform rectTransform)
-        {
-            var anchoredPosition = rectTransform.anchoredPosition;
-            _posX.defaultVal = anchoredPosition.x;
-            _posY.defaultVal = anchoredPosition.y;
-            _posX.val = _posX.defaultVal;
-            _posY.val = _posY.defaultVal;
-            var sizeDelta = rectTransform.sizeDelta;
-            _sizeX.defaultVal = sizeDelta.x;
-            _sizeY.defaultVal = sizeDelta.y;
-            _sizeX.val = _sizeX.defaultVal;
-            _sizeY.val = _sizeY.defaultVal;
-
-            _posX.setCallbackFunction = value =>
-            {
-                if(rectTransform)
-                {
-                    rectTransform.anchoredPosition = new Vector2(value, _posY.val);
-                }
-            };
-            _posY.setCallbackFunction = value =>
-            {
-                if(rectTransform)
-                {
-                    rectTransform.anchoredPosition = new Vector2(_posX.val, value);
-                }
-            };
-            _sizeX.setCallbackFunction = value =>
-            {
-                if(rectTransform)
-                {
-                    rectTransform.sizeDelta = new Vector2(value, _sizeY.val);
-                }
-            };
-            _sizeY.setCallbackFunction = value =>
-            {
-                if(rectTransform)
-                {
-                    rectTransform.sizeDelta = new Vector2(_sizeX.val, value);
-                }
-            };
         }
 
         static void SetUIDynamicToggleVisibility(UIDynamicToggle target, bool enabled)
