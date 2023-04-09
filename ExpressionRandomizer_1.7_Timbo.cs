@@ -428,7 +428,7 @@ namespace extraltodeuslExpRandPlugin
             CreateToggle(_filterAndSearchJsb, true);
             CreateToggle(_onlyShowActiveJsb, true);
 
-            var zeroMorphButton = SmallButton("Zero selected", 795, -400);
+            var zeroMorphButton = SmallButton("Zero selected", 800, -405);
             zeroMorphButton.buttonColor = _rustRed;
             zeroMorphButton.textColor = Color.white;
             zeroMorphButton.button.onClick.AddListener(() =>
