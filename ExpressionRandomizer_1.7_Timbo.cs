@@ -10,7 +10,7 @@ namespace extraltodeuslExpRandPlugin
 {
     sealed class ExpressionRandomizer : MVRScript
     {
-        readonly string[] _bodyRegion =
+        readonly string[] _excludeRegions =
         {
             "Arms",
             "Body",
@@ -48,7 +48,7 @@ namespace extraltodeuslExpRandPlugin
         readonly Dictionary<string, float> _initialMorphValues = new Dictionary<string, float>();
         readonly Dictionary<string, float> _newMorphValues = new Dictionary<string, float>();
 
-        readonly string[] _poseRegion =
+        readonly string[] _poseRegions =
         {
             "Pose",
             "Expressions",
@@ -95,7 +95,7 @@ namespace extraltodeuslExpRandPlugin
         JSONStorableFloat _animLengthJsf;
         JSONStorableFloat _animWaitJsf;
 
-        List<string> _colliderChoices;
+        List<string> _collisionTriggerOptions;
         JSONStorableStringChooser _colliderStringChooser;
 
         JSONStorableBool _filterAndSearchJsb;
@@ -289,7 +289,7 @@ namespace extraltodeuslExpRandPlugin
         // Thanks to VRStudy for helping for the trigger-related functions !!
         void CleanTriggers()
         {
-            foreach(string triggerName in _colliderChoices)
+            foreach(string triggerName in _collisionTriggerOptions)
             {
                 if(triggerName != _colliderStringChooser.val && triggerName != "None")
                 {
@@ -462,8 +462,8 @@ namespace extraltodeuslExpRandPlugin
                         var morph = _morphsControlUI.GetMorphByDisplayName(name);
 
                         if(
-                            _poseRegion.Any(str => morph.region.Contains(str)) &&
-                            !_bodyRegion.Any(str => morph.region.Contains(str)) ||
+                            _poseRegions.Any(morph.region.Contains) &&
+                            !_excludeRegions.Any(morph.region.Contains) ||
                             _tailorList.Any(name.Contains)
                         )
                         {
@@ -497,7 +497,7 @@ namespace extraltodeuslExpRandPlugin
 
                         if(entry.Key != "Play")
                         {
-                            _toggles[entry.Key].toggle.isOn = _defaultOn.Any(str => entry.Key.Equals(str));
+                            _toggles[entry.Key].toggle.isOn = _defaultOn.Any(entry.Key.Equals);
                         }
                     }
                 });
@@ -514,7 +514,7 @@ namespace extraltodeuslExpRandPlugin
 
                         if(entry.Key != "Play")
                         {
-                            _toggles[entry.Key].toggle.isOn = _preset1.Any(str => entry.Key.Equals(str));
+                            _toggles[entry.Key].toggle.isOn = _preset1.Any(entry.Key.Equals);
                         }
                     }
                 });
@@ -531,7 +531,7 @@ namespace extraltodeuslExpRandPlugin
 
                         if(entry.Key != "Play")
                         {
-                            _toggles[entry.Key].toggle.isOn = _preset2.Any(str => entry.Key.Equals(str));
+                            _toggles[entry.Key].toggle.isOn = _preset2.Any(entry.Key.Equals);
                         }
                     }
                 });
@@ -572,13 +572,14 @@ namespace extraltodeuslExpRandPlugin
 
                 foreach(var entry in temporaryToggles)
                 {
-                    var checkBoxTickJsb = new JSONStorableBool(entry.Value, _defaultOn.Any(str => entry.Key.Equals(str)))
+                    var checkBoxTickJsb = new JSONStorableBool(entry.Value, _defaultOn.Any(entry.Key.Equals))
                     {
                         storeType = JSONStorableParam.StoreType.Full,
                         setCallbackFunction = on =>
                         {
 
-                            _togglesOn = _toggles.Where(t => t.Value.toggle.isOn).ToDictionary(p => p.Key, p => p.Value);
+                            _togglesOn = _toggles.Where(toggle => toggle.Value.toggle.isOn)
+                                .ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
 
                             if(!on && entry.Key != "Play")
                             {
@@ -592,7 +593,8 @@ namespace extraltodeuslExpRandPlugin
                     _toggles[entry.Key] = CreateToggle(checkBoxTickJsb, true);
                 }
 
-                _togglesOn = _toggles.Where(t => t.Value.toggle.isOn).ToDictionary(p => p.Key, p => p.Value);
+                _togglesOn = _toggles.Where(toggle => toggle.Value.toggle.isOn)
+                    .ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
 
 #endregion
 
@@ -603,7 +605,7 @@ namespace extraltodeuslExpRandPlugin
                 transitionButton.button.onClick.AddListener(UpdateRandomParams);
                 transitionButton.buttonColor = new Color(0.5f, 1f, 0.5f);
 
-                _colliderChoices = new List<string>
+                _collisionTriggerOptions = new List<string>
                 {
                     "None",
                     "LipTrigger",
@@ -617,7 +619,7 @@ namespace extraltodeuslExpRandPlugin
                     "DeeperVaginaTrigger",
                 };
 
-                _colliderStringChooser = new JSONStorableStringChooser("Collision trigger", _colliderChoices, "None", "Collision trigger");
+                _colliderStringChooser = new JSONStorableStringChooser("Collision trigger", _collisionTriggerOptions, "None", "Collision trigger");
                 RegisterStringChooser(_colliderStringChooser);
                 var dp = CreatePopup(_colliderStringChooser);
                 dp.popup.onOpenPopupHandlers += EnableManualMode;
@@ -822,7 +824,7 @@ namespace extraltodeuslExpRandPlugin
 
         static void ToggleUIDynamicToggle(UIDynamicToggle target, bool enabled)
         {
-            if(target)
+            if(!target)
             {
                 return;
             }
