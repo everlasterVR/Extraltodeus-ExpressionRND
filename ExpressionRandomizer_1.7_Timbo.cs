@@ -254,14 +254,15 @@ namespace extraltodeuslExpRandPlugin
 
         void CreateLeftUI()
         {
+            CreateHeaderTextField("Expression Randomizer");
             CreateSlider(_minJsf);
             CreateSlider(_maxJsf);
             CreateSlider(_multiJsf);
             CreateSlider(_masterSpeedJsf);
             CreateSpacer().height = 50;
-            var toggle = SmallToggle(_playJsb, 10, -600);
+            var toggle = SmallToggle(_playJsb, 10, -668);
             toggle.toggle.onValueChanged.AddListener(val => toggle.textColor = val ? Color.black : _darkRed);
-            SmallToggle(_smoothJsb, 280, -600);
+            SmallToggle(_smoothJsb, 280, -668);
             CreateAdditionalOptionsUI();
             CreateMoreAdditionalOptionsUI();
             SelectOptionsUI(false);
@@ -269,12 +270,12 @@ namespace extraltodeuslExpRandPlugin
 
         void CreateAdditionalOptionsUI()
         {
-            _moreButton = NavButton("More >", 339, -665);
+            _moreButton = NavButton("More >", 339, -733);
             _moreButton.buttonColor = Color.gray;
             _moreButton.textColor = Color.white;
             _moreButton.button.onClick.AddListener(() => SelectOptionsUI(true));
 
-            CreateHeaderTextField(new JSONStorableString("OptionsHeader", "Additional options"));
+            CreateHeaderTextField("Additional Options");
 
             _loopLengthSlider = CreateSlider(_animWaitJsf);
             _morphingSpeedSlider = CreateSlider(_animLengthJsf);
@@ -302,7 +303,7 @@ namespace extraltodeuslExpRandPlugin
 
         void CreateMoreAdditionalOptionsUI()
         {
-            _backButton = NavButton("< Back", 339, -665);
+            _backButton = NavButton("< Back", 339, -733);
             _backButton.buttonColor = Color.gray;
             _backButton.textColor = Color.white;
             _backButton.button.onClick.AddListener(() => SelectOptionsUI(false));
@@ -413,7 +414,7 @@ namespace extraltodeuslExpRandPlugin
                 }
             });
 
-            CreateHeaderTextField(new JSONStorableString("MorphsHeader", "Morphs"), true);
+            CreateHeaderTextField("Morphs", true);
 
             CreateToggle(_filterAndSearchJsb, true);
             CreateToggle(_onlyShowActiveJsb, true);
@@ -504,8 +505,9 @@ namespace extraltodeuslExpRandPlugin
             DisplayAll();
         }
 
-        void CreateHeaderTextField(JSONStorableString jss, bool rightSide = false)
+        void CreateHeaderTextField(string text, bool rightSide = false)
         {
+            var jss = new JSONStorableString(text, text);
             var textField = CreateTextField(jss, rightSide);
             textField.UItext.fontSize = 30;
             textField.backgroundColor = Color.clear;
