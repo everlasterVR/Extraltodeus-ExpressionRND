@@ -23,6 +23,7 @@ namespace extraltodeuslExpRandPlugin
             "Neck",
             "Feet",
             "Waist",
+            "Torso",
             "Eyes Closed Left",
             "Eyes Closed Right",
             "Mouth Smile Simple Left",
