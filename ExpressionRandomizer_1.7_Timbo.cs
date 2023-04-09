@@ -87,6 +87,7 @@ namespace extraltodeuslExpRandPlugin
             "Eye Roll Back_DD",
         };
 
+        List<MorphModel> _enabledMorphs;
         readonly List<MorphModel> _morphModels = new List<MorphModel>();
 
         JSONStorableBool _playJsb;
@@ -247,7 +248,13 @@ namespace extraltodeuslExpRandPlugin
             CreateSpacer(true).height = 120f;
 
             var selectNone = SmallButton("Select None", 536, -62);
-            selectNone.button.onClick.AddListener(() => _morphModels.ForEach(morphModel => morphModel.Toggle.toggle.isOn = false));
+            selectNone.button.onClick.AddListener(() =>
+            {
+                foreach(var morphModel in _morphModels)
+                {
+                    morphModel.EnabledJsb.val = false;
+                }
+            });
 
             var selectDefault = SmallButton("Select Default", 800, -62);
             selectDefault.button.onClick.AddListener(() =>
@@ -260,7 +267,7 @@ namespace extraltodeuslExpRandPlugin
                         _masterSpeedJsf.val = 1;
                     }
 
-                    morphModel.Toggle.toggle.isOn = morphModel.DefaultOn;
+                    morphModel.EnabledJsb.val = morphModel.DefaultOn;
                 }
             });
 
@@ -275,7 +282,7 @@ namespace extraltodeuslExpRandPlugin
                         _masterSpeedJsf.val = 3.0f;
                     }
 
-                    morphModel.Toggle.toggle.isOn = morphModel.Preset1On;
+                    morphModel.EnabledJsb.val = morphModel.Preset1On;
                 }
             });
 
@@ -290,7 +297,7 @@ namespace extraltodeuslExpRandPlugin
                         _masterSpeedJsf.val = 4.2f;
                     }
 
-                    morphModel.Toggle.toggle.isOn = morphModel.Preset2On;
+                    morphModel.EnabledJsb.val = morphModel.Preset2On;
                 }
             });
 
@@ -365,11 +372,15 @@ namespace extraltodeuslExpRandPlugin
                             var morph = _morphsControlUI.GetMorphByDisplayName(morphModel.DisplayName);
                             morph.morphValue = 0;
                         }
+
+                        _enabledMorphs = _morphModels.Where(item => item.EnabledJsb.val).ToList();
                     },
                 };
                 RegisterBool(morphModel.EnabledJsb);
                 morphModel.Toggle = CreateToggle(morphModel.EnabledJsb, true);
             }
+
+            _enabledMorphs = _morphModels.Where(item => item.EnabledJsb.val).ToList();
 
             var transitionButton = CreateButton("Trigger Transition");
             transitionButton.button.onClick.AddListener(SetNewRandomMorphValues);
@@ -403,9 +414,9 @@ namespace extraltodeuslExpRandPlugin
             {
                 foreach(var morphModel in _morphModels)
                 {
-                    if(morphModel.Toggle.toggle.isOn)
+                    if(morphModel.EnabledJsb.val)
                     {
-                        morphModel.Morph.animatable = false;
+                        morphModel.Morph.animatable = true;
                     }
                 }
             });
@@ -415,7 +426,7 @@ namespace extraltodeuslExpRandPlugin
             {
                 foreach(var morphModel in _morphModels)
                 {
-                    morphModel.UpdateInitialValue();
+                    morphModel.UpdateDefaultValue();
                 }
             });
 
@@ -425,7 +436,7 @@ namespace extraltodeuslExpRandPlugin
                 _playJsb.val = false;
                 foreach(var morphModel in _morphModels)
                 {
-                    morphModel.ResetValue();
+                    morphModel.ResetToDefault();
                 }
             });
 
@@ -554,26 +565,23 @@ namespace extraltodeuslExpRandPlugin
             // Searching the toggle
             foreach(var morphModel in _morphModels)
             {
-                var uiDynamicToggle = morphModel.Toggle;
-                bool morphEnabled = uiDynamicToggle.toggle.isOn;
-
                 // Displaying everything and returning if we have the default value in the field and do not try to filter active only
                 if(!_onlyShowActiveJsb.val && _filterInputField.text == FILTER_DEFAULT_VAL)
                 {
-                    SetUIDynamicToggleVisibility(uiDynamicToggle, true);
+                    SetUIDynamicToggleVisibility(morphModel.Toggle, true);
                     continue;
                 }
 
                 int searchHit = 0;
 
-                if(!_onlyShowActiveJsb.val || _onlyShowActiveJsb.val && morphEnabled)
+                if(!_onlyShowActiveJsb.val || _onlyShowActiveJsb.val && morphModel.EnabledJsb.val)
                 {
                     // Doing word search only if we don't have the default value
                     if(_filterInputField.text != FILTER_DEFAULT_VAL)
                     {
                         foreach(string search in searchList)
                         {
-                            string labelText = uiDynamicToggle.labelText.text.ToLower();
+                            string labelText = morphModel.Toggle.labelText.text.ToLower();
                             string searchVal = search.ToLower();
                             if(labelText.Contains(searchVal))
                             {
@@ -581,7 +589,7 @@ namespace extraltodeuslExpRandPlugin
                             }
                         }
                     }
-                    else if(_onlyShowActiveJsb.val && morphEnabled)
+                    else if(_onlyShowActiveJsb.val && morphModel.EnabledJsb.val)
                     {
                         // We have the default value in the search text and we want to only show active
                         // So we simply make this result valid for any situation below
@@ -591,15 +599,15 @@ namespace extraltodeuslExpRandPlugin
 
                 if(!_filterAndSearchJsb.val && searchHit > 0)
                 {
-                    SetUIDynamicToggleVisibility(uiDynamicToggle, true);
+                    SetUIDynamicToggleVisibility(morphModel.Toggle, true);
                 }
                 else if(_filterAndSearchJsb.val && searchHit == searchList.Count)
                 {
-                    SetUIDynamicToggleVisibility(uiDynamicToggle, true);
+                    SetUIDynamicToggleVisibility(morphModel.Toggle, true);
                 }
                 else
                 {
-                    SetUIDynamicToggleVisibility(uiDynamicToggle, false);
+                    SetUIDynamicToggleVisibility(morphModel.Toggle, false);
                 }
             }
         }
@@ -705,8 +713,13 @@ namespace extraltodeuslExpRandPlugin
                 const string textBoxMessage = "\n Animatable morphs (not animated) :\n";
                 string animatableSelected = textBoxMessage;
 
-                foreach(var morphModel in _morphModels)
+                foreach(var morphModel in _enabledMorphs)
                 {
+                    if(!morphModel.EnabledJsb.val)
+                    {
+                        continue;
+                    }
+
                     if(morphModel.Morph.animatable)
                     {
                         morphModel.CalculateMorphValue(_smoothJsb.val, _animLengthJsf.val, _masterSpeedJsf.val, _timer, _animWaitJsf.val);
@@ -733,8 +746,13 @@ namespace extraltodeuslExpRandPlugin
         {
             if(UnityEngine.Random.Range(0f, 100f) <= _triggerChanceJsf.val || !_randomJsb.val)
             {
-                foreach(var morphModel in _morphModels)
+                foreach(var morphModel in _enabledMorphs)
                 {
+                    if(!morphModel.EnabledJsb.val)
+                    {
+                        continue;
+                    }
+
                     morphModel.SetNewMorphValue(_minJsf.val, _maxJsf.val, _multiJsf.val, _abaJsb.val);
                 }
             }
@@ -779,7 +797,7 @@ namespace extraltodeuslExpRandPlugin
             }
             else
             {
-                SuperController.LogMessage("Couldn't find trigger " + triggerName);
+                SuperController.LogMessage($"{nameof(ExpressionRandomizer)}: Couldn't find trigger " + triggerName);
             }
         }
 
@@ -831,6 +849,27 @@ namespace extraltodeuslExpRandPlugin
             }
         }
 
+        void OnDisable()
+        {
+            try
+            {
+                foreach(var morphModel in _morphModels)
+                {
+                    morphModel.ResetToInitial();
+                }
+            }
+            catch(Exception e)
+            {
+                SuperController.LogMessage($"{nameof(ExpressionRandomizer)}: {nameof(OnDisable)} error: " + e);
+                throw;
+            }
+        }
+
+        void OnDestroy()
+        {
+
+        }
+
 #region Utils
 
         static bool GlobalAnimationFrozen()
@@ -858,7 +897,8 @@ namespace extraltodeuslExpRandPlugin
         public JSONStorableBool EnabledJsb { get; set; }
         public UIDynamicToggle Toggle { get; set; }
 
-        float _initialMorphValue;
+        readonly float _initialMorphValue;
+        float _defaultMorphValue;
         float _currentMorphValue;
         float _newMorphValue;
 
@@ -868,6 +908,7 @@ namespace extraltodeuslExpRandPlugin
             DisplayName = displayName;
             UpperRegion = Regex.Split(region, "/").LastOrDefault() ?? "";
             _initialMorphValue = Morph.morphValue;
+            _defaultMorphValue = _initialMorphValue;
             Morph.morphValue = 0; // TODO correct?
             _currentMorphValue = Morph.morphValue;
         }
@@ -890,12 +931,17 @@ namespace extraltodeuslExpRandPlugin
             }
         }
 
-        public void UpdateInitialValue()
+        public void UpdateDefaultValue()
         {
-            _initialMorphValue = Morph.morphValue;
+            _defaultMorphValue = Morph.morphValue;
         }
 
-        public void ResetValue()
+        public void ResetToDefault()
+        {
+            Morph.morphValue = _defaultMorphValue;
+        }
+
+        public void ResetToInitial()
         {
             Morph.morphValue = _initialMorphValue;
         }
