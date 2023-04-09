@@ -25,6 +25,7 @@ namespace extraltodeuslExpRandPlugin
             "Eyes Closed Right",
             "Mouth Smile Simple Left",
             "Mouth Smile Simple Right",
+            "Pose Controls/JCM", // JointCorrect morphs by FallenDancer
         };
         readonly Dictionary<string, float> _currentMorphsValues = new Dictionary<string, float>();
 
@@ -37,7 +38,7 @@ namespace extraltodeuslExpRandPlugin
             "Concentrate",
             "Desire",
             "Flirting",
-            "Pupils Dialate",
+            "Pupils Dialate", //sic
             "Snarl Left",
             "Snarl Right",
             "Eyes Squint Left",
