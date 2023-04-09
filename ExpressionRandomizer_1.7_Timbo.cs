@@ -297,7 +297,7 @@ namespace extraltodeuslExpRandPlugin
                 var filterTextJss = new JSONStorableString("FilterText", FILTER_DEFAULT_VAL);
                 var filterTextField = CreateTextField(filterTextJss, true);
                 SetupTextField(filterTextField, 63, false, false);
-                _filterInputField = filterTextField.UItext.gameObject.AddComponent<InputField>();
+                _filterInputField = filterTextField.gameObject.AddComponent<InputField>();
                 _filterInputField.textComponent = filterTextField.UItext;
                 _filterInputField.lineType = InputField.LineType.SingleLine;
                 _filterInputField.onValueChanged.AddListener(_ => OnFilterChanged());
