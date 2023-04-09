@@ -1,0 +1,23 @@
+{
+  "licenseType" : "FC",
+  "creatorName" : "VamTimbo",
+  "packageName" : "Extraltodeus-ExpressionRND",
+  "standardReferenceVersionOption" : "Latest",
+  "scriptReferenceVersionOption" : "Exact",
+  "description" : "Plugin originally by extraltodeus. Modified by Hazmhox and everlaster",
+  "credits" : "",
+  "instructions" : "Place onto person object. Select morphs and options.",
+  "promotionalLink" : "",
+  "programVersion" : "1.22.0.1",
+  "contentList" : [
+    "Custom/Scripts/VamTimbo/ExpressionRandomizer_1.7_Timbo.cs"
+  ],
+  "dependencies" : {
+  },
+  "customOptions" : {
+    "preloadMorphs" : "false"
+  },
+  "hadReferenceIssues" : "false",
+  "referenceIssues" : [
+  ]
+}
