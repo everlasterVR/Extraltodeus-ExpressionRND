@@ -109,6 +109,7 @@ namespace extraltodeuslExpRandPlugin
         JSONStorableBool _smoothJsb;
         JSONStorableFloat _triggerChanceJsf;
         JSONStorableAction _manualTriggerAction;
+        JSONStorableString _pagesJss;
 
         InputField _filterInputField;
 
@@ -226,6 +227,7 @@ namespace extraltodeuslExpRandPlugin
             _filterAndSearchJsb.setCallbackFunction += val => OnFilterChanged();
             _onlyShowActiveJsb = new JSONStorableBool("Only show active morphs", false);
             _onlyShowActiveJsb.setCallbackFunction += val => OnFilterChanged();
+            _pagesJss = new JSONStorableString("Pages", "");
 
             CreateLeftUI();
             CreateRightUI();
@@ -259,7 +261,7 @@ namespace extraltodeuslExpRandPlugin
             CreateSpacer().height = 50;
             var toggle = SmallToggle(_playJsb, 10, -600);
             toggle.toggle.onValueChanged.AddListener(val => toggle.textColor = val ? Color.black : _darkRed);
-            SmallToggle(_smoothJsb, 272, -600);
+            SmallToggle(_smoothJsb, 280, -600);
             CreateAdditionalOptionsUI();
             CreateMoreAdditionalOptionsUI();
             SelectOptionsUI(false);
@@ -267,7 +269,7 @@ namespace extraltodeuslExpRandPlugin
 
         void CreateAdditionalOptionsUI()
         {
-            _moreButton = OptionsNavButton("More >", 355, -665);
+            _moreButton = NavButton("More >", 339, -665);
             _moreButton.buttonColor = Color.gray;
             _moreButton.textColor = Color.white;
             _moreButton.button.onClick.AddListener(() => SelectOptionsUI(true));
@@ -300,7 +302,7 @@ namespace extraltodeuslExpRandPlugin
 
         void CreateMoreAdditionalOptionsUI()
         {
-            _backButton = OptionsNavButton("< Back", 355, -665);
+            _backButton = NavButton("< Back", 339, -665);
             _backButton.buttonColor = Color.gray;
             _backButton.textColor = Color.white;
             _backButton.button.onClick.AddListener(() => SelectOptionsUI(false));
@@ -338,11 +340,14 @@ namespace extraltodeuslExpRandPlugin
             _backButton.SetVisible(alt);
         }
 
+        UIDynamicButton _prevPageButton;
+        UIDynamicButton _nextPageButton;
+
         void CreateRightUI()
         {
             CreateSpacer(true).height = 120f;
 
-            var selectNone = SmallButton("Select None", 536, -62);
+            var selectNone = SmallButton("Select None", 550, -62);
             selectNone.button.onClick.AddListener(() =>
             {
                 foreach(var morphModel in _morphModels)
@@ -351,7 +356,7 @@ namespace extraltodeuslExpRandPlugin
                 }
             });
 
-            var selectDefault = SmallButton("Select Default", 800, -62);
+            var selectDefault = SmallButton("Select Default", 820, -62);
             selectDefault.button.onClick.AddListener(() =>
             {
                 foreach(var morphModel in _morphModels)
@@ -366,7 +371,7 @@ namespace extraltodeuslExpRandPlugin
                 }
             });
 
-            var selectPreset1 = SmallButton("Select Preset 1", 536, -132);
+            var selectPreset1 = SmallButton("Select Preset 1", 550, -132);
             selectPreset1.button.onClick.AddListener(() =>
             {
                 foreach(var morphModel in _morphModels)
@@ -381,7 +386,7 @@ namespace extraltodeuslExpRandPlugin
                 }
             });
 
-            var selectPreset2 = SmallButton("Select Preset 2", 800, -132);
+            var selectPreset2 = SmallButton("Select Preset 2", 820, -132);
             selectPreset2.button.onClick.AddListener(() =>
             {
                 foreach(var morphModel in _morphModels)
@@ -395,6 +400,24 @@ namespace extraltodeuslExpRandPlugin
                     morphModel.EnabledJsb.val = morphModel.Preset2On;
                 }
             });
+
+            var zeroMorphButton = SmallButton("Zero selected", 820, -198);
+            zeroMorphButton.buttonColor = _rustRed;
+            zeroMorphButton.textColor = Color.white;
+            zeroMorphButton.button.onClick.AddListener(() =>
+            {
+                _playJsb.val = false;
+                foreach(var morphModel in _morphModels)
+                {
+                    morphModel.ZeroValue();
+                }
+            });
+
+            CreateHeaderTextField(new JSONStorableString("MorphsHeader", "Morphs"), true);
+
+            CreateToggle(_filterAndSearchJsb, true);
+            CreateToggle(_onlyShowActiveJsb, true);
+            CreateSpacer(true).height = 2;
 
             // ******* FILTER BOX ***********
             {
@@ -427,23 +450,6 @@ namespace extraltodeuslExpRandPlugin
                 OnFilterChanged(); // force trigger if value unchanged
             });
 
-            CreateToggle(_filterAndSearchJsb, true);
-            CreateToggle(_onlyShowActiveJsb, true);
-
-            var zeroMorphButton = SmallButton("Zero selected", 800, -405);
-            zeroMorphButton.buttonColor = _rustRed;
-            zeroMorphButton.textColor = Color.white;
-            zeroMorphButton.button.onClick.AddListener(() =>
-            {
-                _playJsb.val = false;
-                foreach(var morphModel in _morphModels)
-                {
-                    morphModel.ZeroValue();
-                }
-            });
-
-            CreateHeaderTextField(new JSONStorableString("MorphsHeader", "Morphs"), true);
-
             /* Dev sliders for aligning custom elements */
             // CreateSlider(_posX, true);
             // CreateSlider(_posY, true);
@@ -464,15 +470,46 @@ namespace extraltodeuslExpRandPlugin
                     _enabledMorphs = _morphModels.Where(item => item.EnabledJsb.val).ToList();
                 };
                 morphModel.Toggle = CreateToggle(morphModel.EnabledJsb, true);
+                morphModel.Toggle.SetVisible(false);
             }
+
+            _prevPageButton = NavButton("< Prev", 549, -1205);
+            _prevPageButton.buttonColor = Color.gray;
+            _prevPageButton.textColor = Color.white;
+            _prevPageButton.button.onClick.AddListener(() =>
+            {
+                if(_currentPage > 0)
+                {
+                    _currentPage--;
+                    ShowTogglesOnPage();
+                }
+            });
+            _prevPageButton.button.interactable = false;
+
+            CreatePageTextField();
+
+            _nextPageButton = NavButton("Next >", 880, -1205);
+            _nextPageButton.buttonColor = Color.gray;
+            _nextPageButton.textColor = Color.white;
+            _nextPageButton.button.onClick.AddListener(() =>
+            {
+                if(_currentPage < _totalPages - 1)
+                {
+                    _currentPage++;
+                    ShowTogglesOnPage();
+                }
+            });
+            _nextPageButton.button.interactable = false;
+
+            DisplayAll();
         }
 
-        void CreateHeaderTextField(JSONStorableString filterHeaderJss, bool rightSide = false)
+        void CreateHeaderTextField(JSONStorableString jss, bool rightSide = false)
         {
-            var textField = CreateTextField(filterHeaderJss, rightSide);
+            var textField = CreateTextField(jss, rightSide);
             textField.UItext.fontSize = 30;
             textField.backgroundColor = Color.clear;
-            textField.text = $"<size=8>\n</size><b>{filterHeaderJss.val}</b>";
+            textField.text = $"<size=8>\n</size><b>{jss.val}</b>";
             var layout = textField.GetComponent<LayoutElement>();
             layout.preferredHeight = 50;
             layout.minHeight = 50;
@@ -483,7 +520,7 @@ namespace extraltodeuslExpRandPlugin
             var t = InstantiateToContent(manager.configurableTogglePrefab);
             var rectTransform = GetRekt(t);
             rectTransform.anchoredPosition = new Vector2(x, y);
-            rectTransform.sizeDelta = new Vector2(-805, 52);
+            rectTransform.sizeDelta = new Vector2(-825, 52);
             if(callbacks)
             {
                 SetDevUISliderCallbacks(rectTransform);
@@ -500,7 +537,7 @@ namespace extraltodeuslExpRandPlugin
             var t = InstantiateToContent(manager.configurableButtonPrefab);
             var rectTransform = GetRekt(t);
             rectTransform.anchoredPosition = new Vector2(x, y);
-            rectTransform.sizeDelta = new Vector2(-805, 52);
+            rectTransform.sizeDelta = new Vector2(-825, 52);
             if(callbacks)
             {
                 SetDevUISliderCallbacks(rectTransform);
@@ -511,23 +548,44 @@ namespace extraltodeuslExpRandPlugin
             return button;
         }
 
-        UIDynamicButton OptionsNavButton(string label, int x, int y)
+        UIDynamicButton NavButton(string label, int x, int y, bool callbacks = false)
         {
             var t = InstantiateToContent(manager.configurableButtonPrefab);
             var rectTransform = GetRekt(t);
             rectTransform.anchoredPosition = new Vector2(x, y);
-            rectTransform.sizeDelta = new Vector2(-890, 52);
+            rectTransform.sizeDelta = new Vector2(-885, 52);
+            if(callbacks)
+            {
+                SetDevUISliderCallbacks(rectTransform);
+            }
+
             var button = t.GetComponent<UIDynamicButton>();
             button.label = label;
             return button;
+        }
+
+        void CreatePageTextField()
+        {
+            var t = InstantiateToContent(manager.configurableTextFieldPrefab);
+            var rectTransform = GetRekt(t);
+            rectTransform.anchoredPosition = new Vector2(740, -1205);
+            rectTransform.sizeDelta = new Vector2(-949, 52);
+            var textField = t.GetComponent<UIDynamicTextField>();
+            textField.textColor = Color.white;
+            textField.backgroundColor = Color.clear;
+            textField.text = _pagesJss.val;
+            textField.UItext.fontSize = 30;
+            textField.UItext.alignment = TextAnchor.LowerCenter;
+            _pagesJss.dynamicText = textField;
+            textFieldToJSONStorableString.Add(textField, _pagesJss);
         }
 
         UIDynamicButton ClearButton()
         {
             var t = InstantiateToContent(manager.configurableButtonPrefab);
             var rectTransform = GetRekt(t);
-            rectTransform.anchoredPosition = new Vector2(936, -208);
-            rectTransform.sizeDelta = new Vector2(-940, 63);
+            rectTransform.anchoredPosition = new Vector2(965, -419);
+            rectTransform.sizeDelta = new Vector2(-970, 63);
             var button = t.GetComponent<UIDynamicButton>();
             button.label = "Clear";
             button.buttonColor = _rustRed;
@@ -582,6 +640,10 @@ namespace extraltodeuslExpRandPlugin
         }
 
         bool _preventFilterChangeCallback;
+        const int ITEMS_PER_PAGE = 11;
+        List<int> _filteredIndices = new List<int>();
+        int _currentPage;
+        int _totalPages;
 
         void OnFilterChanged()
         {
@@ -597,12 +659,14 @@ namespace extraltodeuslExpRandPlugin
             {
                 _filterInputField.text = FILTER_DEFAULT_VAL;
                 _filterInputField.Select();
+                DisplayAll();
                 return;
             }
 
             // not searching under 3 letters
             if(trimmed.Length <= 3)
             {
+                DisplayAll();
                 return;
             }
 
@@ -619,13 +683,17 @@ namespace extraltodeuslExpRandPlugin
                 }
             }
 
-            // Searching the toggle
-            foreach(var morphModel in _morphModels)
+            _filteredIndices.Clear();
+
+            for(int i = 0; i < _morphModels.Count; i++)
             {
+                var morphModel = _morphModels[i];
+                morphModel.Toggle.SetVisible(false);
+
                 // Displaying everything and returning if we have the default value in the field and do not try to filter active only
                 if(!_onlyShowActiveJsb.val && trimmed == FILTER_DEFAULT_VAL)
                 {
-                    morphModel.Toggle.SetVisible(true);
+                    _filteredIndices.Add(i);
                     continue;
                 }
 
@@ -654,18 +722,46 @@ namespace extraltodeuslExpRandPlugin
                     }
                 }
 
-                if(!_filterAndSearchJsb.val && searchHit > 0)
+                if(!_filterAndSearchJsb.val && searchHit > 0 || _filterAndSearchJsb.val && searchHit == searchList.Count)
                 {
-                    morphModel.Toggle.SetVisible(true);
+                    _filteredIndices.Add(i);
                 }
-                else if(_filterAndSearchJsb.val && searchHit == searchList.Count)
-                {
-                    morphModel.Toggle.SetVisible(true);
-                }
-                else
-                {
-                    morphModel.Toggle.SetVisible(false);
-                }
+            }
+
+            _totalPages = (int) Math.Ceiling((double) _filteredIndices.Count / ITEMS_PER_PAGE);
+            _currentPage = 0;
+            ShowTogglesOnPage();
+        }
+
+        void DisplayAll()
+        {
+            _filteredIndices = _morphModels.Select((m, i) => i).ToList();
+            _totalPages = (int) Math.Ceiling((double) _filteredIndices.Count / ITEMS_PER_PAGE);
+            _currentPage = 0;
+            ShowTogglesOnPage();
+        }
+
+        void ShowTogglesOnPage()
+        {
+            _pagesJss.val = _totalPages == 0
+                ? "<size=8>\n</size>1 / 1"
+                : $"<size=8>\n</size>{_currentPage + 1} / {_totalPages}";
+
+            for(int i = 0; i < _filteredIndices.Count; i++)
+            {
+                int index = _filteredIndices[i];
+                bool isVisible = i >= _currentPage * ITEMS_PER_PAGE && i < (_currentPage + 1) * ITEMS_PER_PAGE;
+                _morphModels[index].Toggle.SetVisible(isVisible);
+            }
+
+            if(_prevPageButton)
+            {
+                _prevPageButton.button.interactable = _currentPage > 0;
+            }
+
+            if(_nextPageButton)
+            {
+                _nextPageButton.button.interactable = _currentPage < _totalPages - 1;
             }
         }
 
