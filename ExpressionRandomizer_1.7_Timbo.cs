@@ -560,52 +560,70 @@ namespace extraltodeuslExpRandPlugin
             }
         }
 
+        bool _globalAnimationFrozen;
         float _timer;
 
         void Update()
         {
-            if(!_playJsb.val || GlobalAnimationFrozen())
+            _globalAnimationFrozen = GlobalAnimationFrozen();
+            if(!_playJsb.val || _globalAnimationFrozen)
             {
                 return;
             }
 
-            _timer += Time.deltaTime;
-            if(_timer >= _animWaitJsf.val / _masterSpeedJsf.val)
+            try
             {
-                _timer = 0;
-                if(!_manualJsb.val)
+                _timer += Time.deltaTime;
+                if(_timer >= _animWaitJsf.val / _masterSpeedJsf.val)
                 {
-                    SetNewRandomMorphValues();
+                    _timer = 0;
+                    if(!_manualJsb.val)
+                    {
+                        SetNewRandomMorphValues();
+                    }
                 }
+            }
+            catch(Exception e)
+            {
+                SuperController.LogMessage($"{nameof(ExpressionRandomizer)}: {nameof(Update)} error: " + e);
+                enabled = false;
             }
         }
 
         void FixedUpdate()
         {
-            if(!_playJsb.val)
+            if(!_playJsb.val || !enabled || _globalAnimationFrozen)
             {
                 return;
             }
 
-            // morph progressively every morphs to their new values
-            const string textBoxMessage = "\n Animatable morphs (not animated) :\n";
-            string animatableSelected = textBoxMessage;
-
-            foreach(var morphModel in _morphModels)
+            try
             {
-                if(morphModel.Morph.animatable)
+                // morph progressively every morphs to their new values
+                const string textBoxMessage = "\n Animatable morphs (not animated) :\n";
+                string animatableSelected = textBoxMessage;
+
+                foreach(var morphModel in _morphModels)
                 {
-                    morphModel.CalculateMorphValue(_smoothJsb.val, _animLengthJsf.val, _masterSpeedJsf.val, _timer, _animWaitJsf.val);
+                    if(morphModel.Morph.animatable)
+                    {
+                        morphModel.CalculateMorphValue(_smoothJsb.val, _animLengthJsf.val, _masterSpeedJsf.val, _timer, _animWaitJsf.val);
+                    }
+                    else
+                    {
+                        animatableSelected += $" {morphModel.DisplayName}\n";
+                    }
                 }
-                else
+
+                if(animatableSelected != textBoxMessage || _morphListJss.val != textBoxMessage)
                 {
-                    animatableSelected += $" {morphModel.DisplayName}\n";
+                    _morphListJss.val = animatableSelected;
                 }
             }
-
-            if(animatableSelected != textBoxMessage || _morphListJss.val != textBoxMessage)
+            catch(Exception e)
             {
-                _morphListJss.val = animatableSelected;
+                SuperController.LogMessage($"{nameof(ExpressionRandomizer)}: {nameof(FixedUpdate)} error: " + e);
+                enabled = false;
             }
         }
 
@@ -699,6 +717,11 @@ namespace extraltodeuslExpRandPlugin
 
         void TriggerMaintainer()
         {
+            if(!enabled)
+            {
+                return;
+            }
+
             if(_colliderStringChooser.val != "None")
             {
                 CreateTrigger(_colliderStringChooser.val);
