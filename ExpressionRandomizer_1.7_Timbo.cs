@@ -126,7 +126,7 @@ namespace extraltodeuslExpRandPlugin
 
         void Update()
         {
-            if(!_toggles["Play"].toggle.isOn)
+            if(!_toggles["Play"].toggle.isOn || GlobalAnimationFrozen())
             {
                 return;
             }
@@ -737,8 +737,6 @@ namespace extraltodeuslExpRandPlugin
                 return;
             }
 
-
-
             // Field reset
             if(_filterInputField.text.Trim() == "")
             {
@@ -836,5 +834,20 @@ namespace extraltodeuslExpRandPlugin
                 tmpLe.ignoreLayout = !enabled;
             }
         }
+
+#region Utils
+
+        static bool GlobalAnimationFrozen()
+        {
+            bool mainToggleFrozen =
+                SuperController.singleton.freezeAnimationToggle &&
+                SuperController.singleton.freezeAnimationToggle.isOn;
+            bool altToggleFrozen =
+                SuperController.singleton.freezeAnimationToggleAlt &&
+                SuperController.singleton.freezeAnimationToggleAlt.isOn;
+            return mainToggleFrozen || altToggleFrozen;
+        }
+
+#endregion
     }
 }
