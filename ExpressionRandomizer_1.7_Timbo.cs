@@ -88,6 +88,8 @@ namespace extraltodeuslExpRandPlugin
             "Eye Roll Back_DD",
         };
 
+        bool _initialized;
+        bool _restoringFromJson;
         List<MorphModel> _enabledMorphs;
         readonly List<MorphModel> _morphModels = new List<MorphModel>();
 
@@ -458,6 +460,11 @@ namespace extraltodeuslExpRandPlugin
             _morphListJss = new JSONStorableString("Morph list", "");
             UIDynamic morphListText = CreateTextField(_morphListJss);
             morphListText.height = 320;
+
+            SuperController.singleton.onBeforeSceneSaveHandlers += OnBeforeSceneSave;
+            SuperController.singleton.onSceneSavedHandlers += OnSceneSaved;
+
+            _initialized = true;
         }
 
         UIDynamicButton SmallButton(string label, int x, int y)
@@ -623,7 +630,7 @@ namespace extraltodeuslExpRandPlugin
         void Update()
         {
             _globalAnimationFrozen = GlobalAnimationFrozen();
-            if(!_playJsb.val || _globalAnimationFrozen)
+            if(!_playJsb.val || _globalAnimationFrozen || _savingScene || !_initialized || _restoringFromJson)
             {
                 return;
             }
@@ -649,7 +656,7 @@ namespace extraltodeuslExpRandPlugin
 
         void FixedUpdate()
         {
-            if(!_playJsb.val || !enabled || _globalAnimationFrozen)
+            if(!_playJsb.val || !enabled || _globalAnimationFrozen || _savingScene || !_initialized || _restoringFromJson)
             {
                 return;
             }
@@ -796,14 +803,70 @@ namespace extraltodeuslExpRandPlugin
             }
         }
 
+        void ResetMorphs()
+        {
+            foreach(var morphModel in _morphModels)
+            {
+                morphModel.ResetToInitial();
+            }
+        }
+
+        public override void RestoreFromJSON(
+            JSONClass jc,
+            bool restorePhysical = true,
+            bool restoreAppearance = true,
+            JSONArray presetAtoms = null,
+            bool setMissingToDefault = true
+        )
+        {
+            _restoringFromJson = true;
+
+            StartCoroutine(
+                RestoreFromJSONCo(
+                    jc,
+                    restorePhysical,
+                    restoreAppearance,
+                    presetAtoms,
+                    setMissingToDefault
+                )
+            );
+        }
+
+        IEnumerator RestoreFromJSONCo(
+            JSONClass jc,
+            bool restorePhysical,
+            bool restoreAppearance,
+            JSONArray presetAtoms,
+            bool setMissingToDefault
+        )
+        {
+            while(!_initialized)
+            {
+                yield return null;
+            }
+
+            base.RestoreFromJSON(jc, restorePhysical, restoreAppearance, presetAtoms, setMissingToDefault);
+            _restoringFromJson = false;
+        }
+
+        static bool _savingScene;
+
+        void OnBeforeSceneSave()
+        {
+            _savingScene = true;
+            ResetMorphs();
+        }
+
+        static void OnSceneSaved()
+        {
+            _savingScene = false;
+        }
+
         void OnDisable()
         {
             try
             {
-                foreach(var morphModel in _morphModels)
-                {
-                    morphModel.ResetToInitial();
-                }
+                ResetMorphs();
             }
             catch(Exception e)
             {
@@ -814,7 +877,16 @@ namespace extraltodeuslExpRandPlugin
 
         void OnDestroy()
         {
-
+            try
+            {
+                SuperController.singleton.onSceneSavedHandlers -= OnSceneSaved;
+                SuperController.singleton.onBeforeSceneSaveHandlers -= OnBeforeSceneSave;
+            }
+            catch(Exception e)
+            {
+                SuperController.LogMessage($"{nameof(ExpressionRandomizer)}: {nameof(OnDestroy)} error: " + e);
+                throw;
+            }
         }
 
 #region Utils
