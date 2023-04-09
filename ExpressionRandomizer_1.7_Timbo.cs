@@ -1,9 +1,11 @@
 ﻿using SimpleJSON;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 namespace extraltodeuslExpRandPlugin
@@ -111,6 +113,13 @@ namespace extraltodeuslExpRandPlugin
 
         JSONStorableFloat _triggerChanceJsf;
 
+        JSONStorableFloat _posX;
+        JSONStorableFloat _posY;
+        JSONStorableFloat _sizeX;
+        JSONStorableFloat _sizeY;
+
+        const string FILTER_DEFAULT_VAL = "Filter morphs...";
+
         void Start()
         {
             _timer = 0f;
@@ -121,302 +130,363 @@ namespace extraltodeuslExpRandPlugin
         {
             try
             {
-                GetContainingAtom().GetStorableByID("AutoExpressions").SetBoolParamValue("enabled", false);
-                var geometry = (DAZCharacterSelector) containingAtom.GetStorableByID("geometry");
-                _morphsControlUI = geometry.morphsControlUI;
+                StartCoroutine(InitCo());
+            }
+            catch(Exception e)
+            {
+                SuperController.LogMessage($"{nameof(ExpressionRandomizer)}: {nameof(Init)} error: " + e);
+            }
+        }
+
+        IEnumerator InitCo()
+        {
+            yield return new WaitForEndOfFrame();
+            while(SuperController.singleton.isLoading)
+            {
+                yield return null;
+            }
+
+            GetContainingAtom().GetStorableByID("AutoExpressions").SetBoolParamValue("enabled", false);
+            var geometry = (DAZCharacterSelector) containingAtom.GetStorableByID("geometry");
+            _morphsControlUI = geometry.morphsControlUI;
 
 #region Sliders
 
-                _minJsf = new JSONStorableFloat("Minimum value", -0.15f, -1f, 1.0f)
-                {
-                    storeType = JSONStorableParam.StoreType.Full,
-                };
-                RegisterFloat(_minJsf);
-                CreateSlider(_minJsf);
+            _minJsf = new JSONStorableFloat("Minimum value", -0.15f, -1f, 1.0f)
+            {
+                storeType = JSONStorableParam.StoreType.Full,
+            };
+            RegisterFloat(_minJsf);
+            CreateSlider(_minJsf);
 
-                _maxJsf = new JSONStorableFloat("Maximum value", 0.35f, -1f, 1.0f)
-                {
-                    storeType = JSONStorableParam.StoreType.Full,
-                };
-                RegisterFloat(_maxJsf);
-                CreateSlider(_maxJsf);
+            _maxJsf = new JSONStorableFloat("Maximum value", 0.35f, -1f, 1.0f)
+            {
+                storeType = JSONStorableParam.StoreType.Full,
+            };
+            RegisterFloat(_maxJsf);
+            CreateSlider(_maxJsf);
 
-                _multiJsf = new JSONStorableFloat("Multiplier", 1f, 0f, 2f)
-                {
-                    storeType = JSONStorableParam.StoreType.Full,
-                };
-                RegisterFloat(_multiJsf);
-                CreateSlider(_multiJsf);
+            _multiJsf = new JSONStorableFloat("Multiplier", 1f, 0f, 2f)
+            {
+                storeType = JSONStorableParam.StoreType.Full,
+            };
+            RegisterFloat(_multiJsf);
+            CreateSlider(_multiJsf);
 
-                _masterSpeedJsf = new JSONStorableFloat("Master speed", 1f, 0f, 10f)
-                {
-                    storeType = JSONStorableParam.StoreType.Full,
-                };
-                RegisterFloat(_masterSpeedJsf);
-                CreateSlider(_masterSpeedJsf);
+            _masterSpeedJsf = new JSONStorableFloat("Master speed", 1f, 0f, 10f)
+            {
+                storeType = JSONStorableParam.StoreType.Full,
+            };
+            RegisterFloat(_masterSpeedJsf);
+            CreateSlider(_masterSpeedJsf);
 
 #endregion
 
-#region Region Buttons Preparation
+#region Buttons Preparation
 
-                _playJsb = new JSONStorableBool("Play", true)
+            _playJsb = new JSONStorableBool("Play", true)
+            {
+                storeType = JSONStorableParam.StoreType.Full,
+            };
+            RegisterBool(_playJsb);
+            CreateToggle(_playJsb);
+
+            _smoothJsb = new JSONStorableBool("Smooth transitions", true);
+            RegisterBool(_smoothJsb);
+            CreateToggle(_smoothJsb);
+
+            _abaJsb = new JSONStorableBool("Reset used expressions at loop", true);
+            RegisterBool(_abaJsb);
+            CreateToggle(_abaJsb);
+
+            _manualJsb = new JSONStorableBool("Trigger transitions manually", false);
+            RegisterBool(_manualJsb);
+            CreateToggle(_manualJsb);
+
+            _randomJsb = new JSONStorableBool("Random chances for transitions", false);
+            RegisterBool(_randomJsb);
+            CreateToggle(_randomJsb);
+
+            _triggerChanceJsf = new JSONStorableFloat("Chance to trigger", 75f, 0f, 100f)
+            {
+                storeType = JSONStorableParam.StoreType.Full,
+            };
+            RegisterFloat(_triggerChanceJsf);
+            CreateSlider(_triggerChanceJsf);
+
+            var manualTriggerAction = new JSONStorableAction("Trigger transition", SetNewRandomMorphValues);
+            RegisterAction(manualTriggerAction);
+
+            foreach(var morph in _morphsControlUI.GetMorphs())
+            {
+                if(
+                    _poseRegions.Any(morph.region.Contains) &&
+                    !_excludeRegions.Any(morph.region.Contains) ||
+                    _tailorList.Any(morph.displayName.Contains)
+                )
                 {
-                    storeType = JSONStorableParam.StoreType.Full,
-                };
-                RegisterBool(_playJsb);
-                CreateToggle(_playJsb);
-
-                _smoothJsb = new JSONStorableBool("Smooth transitions", true);
-                RegisterBool(_smoothJsb);
-                CreateToggle(_smoothJsb);
-
-                _abaJsb = new JSONStorableBool("Reset used expressions at loop", true);
-                RegisterBool(_abaJsb);
-                CreateToggle(_abaJsb);
-
-                _manualJsb = new JSONStorableBool("Trigger transitions manually", false);
-                RegisterBool(_manualJsb);
-                CreateToggle(_manualJsb);
-
-                _randomJsb = new JSONStorableBool("Random chances for transitions", false);
-                RegisterBool(_randomJsb);
-                CreateToggle(_randomJsb);
-
-                _triggerChanceJsf = new JSONStorableFloat("Chance to trigger", 75f, 0f, 100f)
-                {
-                    storeType = JSONStorableParam.StoreType.Full,
-                };
-                RegisterFloat(_triggerChanceJsf);
-                CreateSlider(_triggerChanceJsf);
-
-                var manualTriggerAction = new JSONStorableAction("Trigger transition", SetNewRandomMorphValues);
-                RegisterAction(manualTriggerAction);
-
-                foreach(var morph in _morphsControlUI.GetMorphs())
-                {
-                    if(
-                        _poseRegions.Any(morph.region.Contains) &&
-                        !_excludeRegions.Any(morph.region.Contains) ||
-                        _tailorList.Any(morph.displayName.Contains)
-                    )
+                    var morphModel = new MorphModel(morph, morph.displayName, morph.region)
                     {
-                        var morphModel = new MorphModel(morph, morph.displayName, morph.region)
-                        {
-                            DefaultOn = _defaultOn.Any(morph.displayName.Equals),
-                            Preset1On = _preset1.Any(morph.displayName.Equals),
-                            Preset2On = _preset2.Any(morph.displayName.Equals),
-                        };
-                        _morphModels.Add(morphModel);
-                    }
+                        DefaultOn = _defaultOn.Any(morph.displayName.Equals),
+                        Preset1On = _preset1.Any(morph.displayName.Equals),
+                        Preset2On = _preset2.Any(morph.displayName.Equals),
+                    };
+                    _morphModels.Add(morphModel);
                 }
+            }
 
-#region Region Helper Buttons
+            _posX = new JSONStorableFloat("posX", 0, -3000, 3000);
+            _posY = new JSONStorableFloat("posY", 0, -3000, 3000);
+            _sizeX = new JSONStorableFloat("sizeX", 0, -2000, 2000);
+            _sizeY = new JSONStorableFloat("sizeY", 0, -2000, 2000);
 
-                var selectNone = CreateButton("Select None", true);
-                selectNone.button.onClick.AddListener(() => _morphModels.ForEach(morphModel => morphModel.Toggle.toggle.isOn = false));
+#endregion
 
-                var selectDefault = CreateButton("Select Default", true);
-                selectDefault.button.onClick.AddListener(() =>
+#region Helper Buttons
+
+            CreateSpacer(true).height = 120f;
+
+            var selectNone = SmallButton("Select None", 536, -62);
+            selectNone.button.onClick.AddListener(() => _morphModels.ForEach(morphModel => morphModel.Toggle.toggle.isOn = false));
+
+            var selectDefault = SmallButton("Select Default", 800, -62);
+            selectDefault.button.onClick.AddListener(() =>
+            {
+                foreach(var morphModel in _morphModels)
                 {
-                    foreach(var morphModel in _morphModels)
+                    if(_manualJsb.val)
                     {
-                        if(_manualJsb.val)
-                        {
-                            _multiJsf.val = 1;
-                            _masterSpeedJsf.val = 1;
-                        }
-
-                        morphModel.Toggle.toggle.isOn = morphModel.DefaultOn;
+                        _multiJsf.val = 1;
+                        _masterSpeedJsf.val = 1;
                     }
-                });
 
-                var selectPres1 = CreateButton("Select preset 1", true);
-                selectPres1.button.onClick.AddListener(() =>
+                    morphModel.Toggle.toggle.isOn = morphModel.DefaultOn;
+                }
+            });
+
+            var selectPreset1 = SmallButton("Select Preset 1", 536, -132);
+            selectPreset1.button.onClick.AddListener(() =>
+            {
+                foreach(var morphModel in _morphModels)
                 {
-                    foreach(var morphModel in _morphModels)
+                    if(_manualJsb.val)
                     {
-                        if(_manualJsb.val)
-                        {
-                            _multiJsf.val = 1.6f;
-                            _masterSpeedJsf.val = 3.0f;
-                        }
-
-                        morphModel.Toggle.toggle.isOn = morphModel.Preset1On;
+                        _multiJsf.val = 1.6f;
+                        _masterSpeedJsf.val = 3.0f;
                     }
-                });
 
-                var selectPres2 = CreateButton("Select preset 2", true);
-                selectPres2.button.onClick.AddListener(() =>
+                    morphModel.Toggle.toggle.isOn = morphModel.Preset1On;
+                }
+            });
+
+            var selectPreset2 = SmallButton("Select Preset 2", 800, -132);
+            selectPreset2.button.onClick.AddListener(() =>
+            {
+                foreach(var morphModel in _morphModels)
                 {
-                    foreach(var morphModel in _morphModels)
+                    if(_manualJsb.val)
                     {
-                        if(_manualJsb.val)
-                        {
-                            _multiJsf.val = 1.8f;
-                            _masterSpeedJsf.val = 4.2f;
-                        }
-
-                        morphModel.Toggle.toggle.isOn = morphModel.Preset2On;
+                        _multiJsf.val = 1.8f;
+                        _masterSpeedJsf.val = 4.2f;
                     }
-                });
-                CreateSpacer(true).height = 10f;
 
-                // ******* FILTER BOX ***********
-                var filterTextJss = new JSONStorableString("FilterText", "Search a morph...");
-                var tmpTextfield = CreateTextField(filterTextJss, true);
-                SetupTextField(tmpTextfield, 110f, false, false);
-                _filterInputField = tmpTextfield.UItext.gameObject.AddComponent<InputField>();
-                _filterInputField.textComponent = tmpTextfield.UItext;
+                    morphModel.Toggle.toggle.isOn = morphModel.Preset2On;
+                }
+            });
+
+            // ******* FILTER BOX ***********
+            {
+                var filterTextJss = new JSONStorableString("FilterText", FILTER_DEFAULT_VAL);
+                var filterTextField = CreateTextField(filterTextJss, true);
+                SetupTextField(filterTextField, 63, false, false);
+                _filterInputField = filterTextField.UItext.gameObject.AddComponent<InputField>();
+                _filterInputField.textComponent = filterTextField.UItext;
                 _filterInputField.lineType = InputField.LineType.SingleLine;
                 _filterInputField.onValueChanged.AddListener(_ => OnFilterChanged());
                 _filterInputField.text = filterTextJss.val;
 
-                var clearSearchBtn = CreateButton("Clear", true);
-                clearSearchBtn.button.onClick.AddListener(() => _filterInputField.text = "");
+                var pointerListener = _filterInputField.gameObject.AddComponent<PointerUpDownListener>();
+                pointerListener.PointerDownAction = () =>
+                {
+                    _preventFilterChangeCallback = true;
+                    if(_filterInputField.text == FILTER_DEFAULT_VAL)
+                    {
+                        _filterInputField.text = "";
+                    }
 
-                SetupButtonWithoutLayout(clearSearchBtn, 130f, new Vector2(385, -370));
-                clearSearchBtn.buttonColor = new Color(0.6f, 0.3f, 0.3f, 1f);
-                clearSearchBtn.textColor = new Color(1f, 1f, 1f, 1f);
+                    _preventFilterChangeCallback = false;
+                };
+            }
 
-                // ******* AND SEARCH ***********
-                _filterAndSearchJsb = new JSONStorableBool("AND Search", false);
-                _filterAndSearchJsb.setCallbackFunction += val => OnFilterChanged();
-                CreateToggle(_filterAndSearchJsb, true);
+            var clearSearchBtn = ClearButton();
+            clearSearchBtn.button.onClick.AddListener(() => _filterInputField.text = "");
 
-                _onlyShowActiveJsb = new JSONStorableBool("Only show active morphs", false);
-                _onlyShowActiveJsb.setCallbackFunction += val => OnFilterChanged();
-                CreateToggle(_onlyShowActiveJsb, true);
+            // ******* AND SEARCH ***********
+            _filterAndSearchJsb = new JSONStorableBool("AND search", false);
+            _filterAndSearchJsb.setCallbackFunction += val => OnFilterChanged();
+            CreateToggle(_filterAndSearchJsb, true);
 
-                var tmpSpacer = CreateSpacer(true);
-                SetupSpacer(tmpSpacer, 25);
+            _onlyShowActiveJsb = new JSONStorableBool("Only show active morphs", false);
+            _onlyShowActiveJsb.setCallbackFunction += val => OnFilterChanged();
+            CreateToggle(_onlyShowActiveJsb, true);
+
+            // CreateSlider(_posX, true);
+            // CreateSlider(_posY, true);
+            // CreateSlider(_sizeX, true);
+            // CreateSlider(_sizeY, true);
+
+            // ******* MORPHS HEADER ***********
+            {
+                var filterHeaderJss = new JSONStorableString("MorphsHeader", "");
+                var textField = CreateTextField(filterHeaderJss, true);
+                textField.UItext.fontSize = 28;
+                // textField.textColor = Color.white;
+                textField.backgroundColor = Color.clear;
+                textField.text = "<size=8>\n</size><b>Morphs</b>";
+                var layout = textField.GetComponent<LayoutElement>();
+                layout.preferredHeight = 42;
+                layout.minHeight = 42;
+            }
 
 #endregion
 
-#region Region checkbox generation
+            foreach(var morphModel in _morphModels)
+            {
+                morphModel.EnabledJsb = new JSONStorableBool(
+                    morphModel.UpperRegion + "/" + morphModel.DisplayName,
+                    morphModel.DefaultOn
+                )
+                {
+                    storeType = JSONStorableParam.StoreType.Full,
+                    setCallbackFunction = on =>
+                    {
+                        if(!on)
+                        {
+                            var morph = _morphsControlUI.GetMorphByDisplayName(morphModel.DisplayName);
+                            morph.morphValue = 0;
+                        }
+                    },
+                };
+                RegisterBool(morphModel.EnabledJsb);
+                morphModel.Toggle = CreateToggle(morphModel.EnabledJsb, true);
+            }
 
+            var transitionButton = CreateButton("Trigger Transition");
+            transitionButton.button.onClick.AddListener(SetNewRandomMorphValues);
+            transitionButton.buttonColor = new Color(0.5f, 1f, 0.5f);
+
+            _collisionTriggerOptions = new List<string>
+            {
+                "None",
+                "LipTrigger",
+                "MouthTrigger",
+                "ThroatTrigger",
+                "lNippleTrigger",
+                "rNippleTrigger",
+                "LabiaTrigger",
+                "VaginaTrigger",
+                "DeepVaginaTrigger",
+                "DeeperVaginaTrigger",
+            };
+
+            _colliderStringChooser = new JSONStorableStringChooser("Collision trigger", _collisionTriggerOptions, "None", "Collision trigger");
+            RegisterStringChooser(_colliderStringChooser);
+            var dp = CreatePopup(_colliderStringChooser);
+            dp.popup.onOpenPopupHandlers += () =>
+            {
+                _manualJsb.val = true;
+                _randomJsb.val = true;
+            };
+
+            var animatableButton = CreateButton("Clear Animatable (from selected)"); // TODO what does this do?
+            animatableButton.button.onClick.AddListener(() =>
+            {
                 foreach(var morphModel in _morphModels)
                 {
-                    morphModel.EnabledJsb = new JSONStorableBool(
-                        morphModel.UpperRegion + "/" + morphModel.DisplayName,
-                        morphModel.DefaultOn
-                    )
+                    if(morphModel.Toggle.toggle.isOn)
                     {
-                        storeType = JSONStorableParam.StoreType.Full,
-                        setCallbackFunction = on =>
-                        {
-                            if(!on)
-                            {
-                                var morph = _morphsControlUI.GetMorphByDisplayName(morphModel.DisplayName);
-                                morph.morphValue = 0;
-                            }
-                        },
-                    };
-                    RegisterBool(morphModel.EnabledJsb);
-                    morphModel.Toggle = CreateToggle(morphModel.EnabledJsb, true);
+                        morphModel.Morph.animatable = false;
+                    }
                 }
+            });
 
-#endregion
-
-#endregion
-
-                //CreateSpacer();
-                var transitionButton = CreateButton("Trigger transition");
-                transitionButton.button.onClick.AddListener(SetNewRandomMorphValues);
-                transitionButton.buttonColor = new Color(0.5f, 1f, 0.5f);
-
-                _collisionTriggerOptions = new List<string>
-                {
-                    "None",
-                    "LipTrigger",
-                    "MouthTrigger",
-                    "ThroatTrigger",
-                    "lNippleTrigger",
-                    "rNippleTrigger",
-                    "LabiaTrigger",
-                    "VaginaTrigger",
-                    "DeepVaginaTrigger",
-                    "DeeperVaginaTrigger",
-                };
-
-                _colliderStringChooser = new JSONStorableStringChooser("Collision trigger", _collisionTriggerOptions, "None", "Collision trigger");
-                RegisterStringChooser(_colliderStringChooser);
-                var dp = CreatePopup(_colliderStringChooser);
-                dp.popup.onOpenPopupHandlers += () =>
-                {
-                    _manualJsb.val = true;
-                    _randomJsb.val = true;
-                };
-
-                var animatableButton = CreateButton("Clear Animatable (from selected)"); // TODO what does this do?
-                animatableButton.button.onClick.AddListener(() =>
-                {
-                    foreach(var morphModel in _morphModels)
-                    {
-                        if(morphModel.Toggle.toggle.isOn)
-                        {
-                            morphModel.Morph.animatable = false;
-                        }
-                    }
-                });
-
-                var setAsDefaultButton = CreateButton("Set current state as default");
-                setAsDefaultButton.button.onClick.AddListener(() =>
-                {
-                    foreach(var morphModel in _morphModels)
-                    {
-                        morphModel.UpdateInitialValue();
-                    }
-                });
-
-                var resetButton = CreateButton("Reset to default/load state");
-                resetButton.button.onClick.AddListener(() =>
-                {
-                    _playJsb.val = false;
-                    foreach(var morphModel in _morphModels)
-                    {
-                        morphModel.ResetValue();
-                    }
-                });
-
-                var zeroMorphButton = CreateButton("Zero Selected");
-                zeroMorphButton.button.onClick.AddListener(() =>
-                {
-                    _playJsb.val = false;
-                    foreach(var morphModel in _morphModels)
-                    {
-                        morphModel.ZeroValue();
-                    }
-                });
-
-                _animWaitJsf = new JSONStorableFloat("Loop length", 2f, 0.1f, 20f)
-                {
-                    storeType = JSONStorableParam.StoreType.Full,
-                };
-                RegisterFloat(_animWaitJsf);
-                CreateSlider(_animWaitJsf);
-
-                _animLengthJsf = new JSONStorableFloat("Morphing speed", 1.0f, 0.1f, 20f)
-                {
-                    storeType = JSONStorableParam.StoreType.Full,
-                };
-                RegisterFloat(_animLengthJsf);
-                CreateSlider(_animLengthJsf);
-
-                _morphListJss = new JSONStorableString("Morph list", "");
-                UIDynamic morphListText = CreateTextField(_morphListJss);
-                morphListText.height = 320;
-            }
-            catch(Exception e)
+            var setAsDefaultButton = CreateButton("Set Current State As Default");
+            setAsDefaultButton.button.onClick.AddListener(() =>
             {
-                SuperController.LogMessage($"{nameof(ExpressionRandomizer)}: Init error: " + e);
-            }
+                foreach(var morphModel in _morphModels)
+                {
+                    morphModel.UpdateInitialValue();
+                }
+            });
+
+            var resetButton = CreateButton("Reset To Default/Load State");
+            resetButton.button.onClick.AddListener(() =>
+            {
+                _playJsb.val = false;
+                foreach(var morphModel in _morphModels)
+                {
+                    morphModel.ResetValue();
+                }
+            });
+
+            var zeroMorphButton = CreateButton("Zero Selected");
+            zeroMorphButton.button.onClick.AddListener(() =>
+            {
+                _playJsb.val = false;
+                foreach(var morphModel in _morphModels)
+                {
+                    morphModel.ZeroValue();
+                }
+            });
+
+            _animWaitJsf = new JSONStorableFloat("Loop length", 2f, 0.1f, 20f)
+            {
+                storeType = JSONStorableParam.StoreType.Full,
+            };
+            RegisterFloat(_animWaitJsf);
+            CreateSlider(_animWaitJsf);
+
+            _animLengthJsf = new JSONStorableFloat("Morphing speed", 1.0f, 0.1f, 20f)
+            {
+                storeType = JSONStorableParam.StoreType.Full,
+            };
+            RegisterFloat(_animLengthJsf);
+            CreateSlider(_animLengthJsf);
+
+            _morphListJss = new JSONStorableString("Morph list", "");
+            UIDynamic morphListText = CreateTextField(_morphListJss);
+            morphListText.height = 320;
         }
 
-        static void SetupSpacer(UIDynamic target, float newHeight)
+        UIDynamicButton SmallButton(string label, int x, int y)
         {
-            var tmpLe = target.GetComponent<LayoutElement>();
-            tmpLe.minHeight = newHeight;
-            tmpLe.preferredHeight = newHeight;
+            var parent = UITransform.Find("Scroll View/Viewport/Content");
+            var buttonTransform = Instantiate(manager.configurableButtonPrefab, parent, false);
+            Destroy(buttonTransform.GetComponent<LayoutElement>());
+            var rectTransform = buttonTransform.GetComponent<RectTransform>();
+            rectTransform.pivot = new Vector2(0, 0);
+            rectTransform.anchoredPosition = new Vector2(x, y);
+            rectTransform.sizeDelta = new Vector2(-805, 52);
+            var button = buttonTransform.GetComponent<UIDynamicButton>();
+            button.label = label;
+            return button;
+        }
+
+        UIDynamicButton ClearButton()
+        {
+            var parent = UITransform.Find("Scroll View/Viewport/Content");
+            var buttonTransform = Instantiate(manager.configurableButtonPrefab, parent, false);
+            Destroy(buttonTransform.GetComponent<LayoutElement>());
+            var rectTransform = buttonTransform.GetComponent<RectTransform>();
+            rectTransform.pivot = new Vector2(0, 0);
+            rectTransform.anchoredPosition = new Vector2(936, -208);
+            rectTransform.sizeDelta = new Vector2(-940, 63);
+            SetDevUISliderCallbacks(rectTransform);
+            var button = buttonTransform.GetComponent<UIDynamicButton>();
+            button.label = "Clear";
+            button.buttonColor = new Color(0.6f, 0.3f, 0.3f, 1f);
+            button.textColor = new Color(1f, 1f, 1f, 1f);
+            return button;
         }
 
         static void SetupTextField(UIDynamicTextField target, float fieldHeight, bool disableBackground = true, bool disableScroll = true)
@@ -437,30 +507,19 @@ namespace extraltodeuslExpRandPlugin
 
         static void DisableScrollOnText(UIDynamicTextField target)
         {
-            var targetSr = target.UItext.transform.parent.transform.parent.transform.parent.GetComponent<ScrollRect>();
-            if(targetSr != null)
+            var scrollRect = target.UItext.transform.parent.transform.parent.transform.parent.GetComponent<ScrollRect>();
+            if(scrollRect)
             {
-                targetSr.horizontal = false;
-                targetSr.vertical = false;
+                scrollRect.horizontal = false;
+                scrollRect.vertical = false;
             }
         }
 
-        static void SetupButtonWithoutLayout(UIDynamicButton target, float newSize, Vector2 newPosition)
-        {
-            var tmpCsf = target.button.transform.gameObject.AddComponent<ContentSizeFitter>();
-            tmpCsf.horizontalFit = ContentSizeFitter.FitMode.MinSize;
-            var tmpLe = target.button.transform.gameObject.GetComponent<LayoutElement>();
-            var tmpRectT = target.button.transform.GetComponent<RectTransform>();
-            tmpRectT.pivot = new Vector2(0f, 0.5f);
-            tmpLe.minWidth = newSize;
-            tmpLe.preferredWidth = newSize;
-            tmpLe.ignoreLayout = true;
-            tmpRectT.anchoredPosition = newPosition;
-        }
+        bool _preventFilterChangeCallback;
 
         void OnFilterChanged()
         {
-            if(_filterInputField == null || _onlyShowActiveJsb == null || _filterAndSearchJsb == null)
+            if(!_filterInputField || _onlyShowActiveJsb == null || _filterAndSearchJsb == null || _preventFilterChangeCallback)
             {
                 return;
             }
@@ -468,7 +527,7 @@ namespace extraltodeuslExpRandPlugin
             // Field reset
             if(_filterInputField.text.Trim() == "")
             {
-                _filterInputField.text = "Search a morph...";
+                _filterInputField.text = FILTER_DEFAULT_VAL;
                 _filterInputField.Select();
                 return;
             }
@@ -499,7 +558,7 @@ namespace extraltodeuslExpRandPlugin
                 bool morphEnabled = uiDynamicToggle.toggle.isOn;
 
                 // Displaying everything and returning if we have the default value in the field and do not try to filter active only
-                if(!_onlyShowActiveJsb.val && _filterInputField.text == "Search a morph...")
+                if(!_onlyShowActiveJsb.val && _filterInputField.text == FILTER_DEFAULT_VAL)
                 {
                     SetUIDynamicToggleVisibility(uiDynamicToggle, true);
                     continue;
@@ -510,7 +569,7 @@ namespace extraltodeuslExpRandPlugin
                 if(!_onlyShowActiveJsb.val || _onlyShowActiveJsb.val && morphEnabled)
                 {
                     // Doing word search only if we don't have the default value
-                    if(_filterInputField.text != "Search a morph...")
+                    if(_filterInputField.text != FILTER_DEFAULT_VAL)
                     {
                         foreach(string search in searchList)
                         {
@@ -543,6 +602,49 @@ namespace extraltodeuslExpRandPlugin
                     SetUIDynamicToggleVisibility(uiDynamicToggle, false);
                 }
             }
+        }
+
+        void SetDevUISliderCallbacks(RectTransform rectTransform)
+        {
+            var anchoredPosition = rectTransform.anchoredPosition;
+            _posX.defaultVal = anchoredPosition.x;
+            _posY.defaultVal = anchoredPosition.y;
+            _posX.val = _posX.defaultVal;
+            _posY.val = _posY.defaultVal;
+            var sizeDelta = rectTransform.sizeDelta;
+            _sizeX.defaultVal = sizeDelta.x;
+            _sizeY.defaultVal = sizeDelta.y;
+            _sizeX.val = _sizeX.defaultVal;
+            _sizeY.val = _sizeY.defaultVal;
+
+            _posX.setCallbackFunction = value =>
+            {
+                if(rectTransform)
+                {
+                    rectTransform.anchoredPosition = new Vector2(value, _posY.val);
+                }
+            };
+            _posY.setCallbackFunction = value =>
+            {
+                if(rectTransform)
+                {
+                    rectTransform.anchoredPosition = new Vector2(_posX.val, value);
+                }
+            };
+            _sizeX.setCallbackFunction = value =>
+            {
+                if(rectTransform)
+                {
+                    rectTransform.sizeDelta = new Vector2(value, _sizeY.val);
+                }
+            };
+            _sizeY.setCallbackFunction = value =>
+            {
+                if(rectTransform)
+                {
+                    rectTransform.sizeDelta = new Vector2(_sizeX.val, value);
+                }
+            };
         }
 
         static void SetUIDynamicToggleVisibility(UIDynamicToggle target, bool enabled)
@@ -818,6 +920,26 @@ namespace extraltodeuslExpRandPlugin
         float LinearValeur(float animLength, float masterSpeed)
         {
             return Mathf.Lerp(_currentMorphValue, _newMorphValue, Time.deltaTime * animLength * masterSpeed);
+        }
+    }
+
+    sealed class PointerUpDownListener : MonoBehaviour, IPointerUpHandler, IPointerDownHandler
+    {
+        public bool isDown;
+
+        public Action PointerUpAction { private get; set; }
+        public Action PointerDownAction { private get; set; }
+
+        public void OnPointerUp(PointerEventData data)
+        {
+            isDown = false;
+            PointerUpAction?.Invoke();
+        }
+
+        public void OnPointerDown(PointerEventData data)
+        {
+            isDown = true;
+            PointerDownAction?.Invoke();
         }
     }
 }
