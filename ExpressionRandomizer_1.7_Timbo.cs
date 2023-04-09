@@ -187,6 +187,8 @@ namespace extraltodeuslExpRandPlugin
                 }
             }
 
+            _morphModels.Sort((a, b) => string.Compare(a.Label, b.Label, StringComparison.Ordinal));
+
             _minJsf = NewStorableFloat("Minimum value", -0.15f, -1f, 1.0f);
             _maxJsf = NewStorableFloat("Maximum value", 0.35f, -1f, 1.0f);
             _multiJsf = NewStorableFloat("Multiplier", 1f, 0f, 2f);
@@ -450,7 +452,7 @@ namespace extraltodeuslExpRandPlugin
 
             foreach(var morphModel in _morphModels)
             {
-                morphModel.EnabledJsb = NewStorableBool(morphModel.UpperRegion + "/" + morphModel.DisplayName, morphModel.DefaultOn);
+                morphModel.EnabledJsb = NewStorableBool(morphModel.Label, morphModel.DefaultOn);
                 morphModel.EnabledJsb.setCallbackFunction = on =>
                 {
                     if(!on)
@@ -986,7 +988,7 @@ namespace extraltodeuslExpRandPlugin
     {
         public DAZMorph Morph { get; }
         public string DisplayName { get; }
-        public string UpperRegion { get; }
+        public string Label { get; }
         public bool DefaultOn { get; set; }
         public bool Preset1On { get; set; }
         public bool Preset2On { get; set; }
@@ -1002,7 +1004,8 @@ namespace extraltodeuslExpRandPlugin
         {
             Morph = morph;
             DisplayName = displayName;
-            UpperRegion = Regex.Split(region, "/").LastOrDefault() ?? "";
+            string upperRegion = Regex.Split(region, "/").LastOrDefault() ?? "";
+            Label = upperRegion + "/" + DisplayName;
             _initialMorphValue = Morph.morphValue;
             _defaultMorphValue = _initialMorphValue;
             Morph.morphValue = 0; // TODO correct?
