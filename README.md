@@ -6,6 +6,6 @@
 
 ## Credit
 
-Extraltodeus
-Hazmhox
-VamTimbo
+- Extraltodeus
+- hazmhox
+- VamTimbo
