@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
 using UnityEngine;
+using UnityEngine.Events;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
@@ -97,8 +98,8 @@ namespace extraltodeuslExpRandPlugin
         JSONStorableBool _abaJsb;
         JSONStorableFloat _animLengthJsf;
         JSONStorableFloat _animWaitJsf;
-        JSONStorableStringChooser _colliderTriggerJssc;
-        JSONStorableBool _filterAndSearchJsb;
+        JSONStorableStringChooser _collisionTriggerJssc;
+        JSONStorableBool _useAndFilterJsb;
         JSONStorableBool _manualJsb;
         JSONStorableFloat _masterSpeedJsf;
         JSONStorableFloat _maxJsf;
@@ -110,8 +111,11 @@ namespace extraltodeuslExpRandPlugin
         JSONStorableFloat _triggerChanceJsf;
         JSONStorableAction _manualTriggerAction;
         JSONStorableString _pagesJss;
+        JSONStorableStringChooser _regionJssc;
 
         InputField _filterInputField;
+        UnityEventsListener _colliderTriggerPopupListener;
+        UnityEventsListener _regionPopupListener;
 
         GenerateDAZMorphsControlUI _morphsControlUI;
 
@@ -128,14 +132,7 @@ namespace extraltodeuslExpRandPlugin
 
         public override void Init()
         {
-            try
-            {
-                StartCoroutine(InitCo());
-            }
-            catch(Exception e)
-            {
-                SuperController.LogMessage($"{nameof(ExpressionRandomizer)}: {nameof(Init)} error: " + e);
-            }
+            StartCoroutine(InitCo());
         }
 
         JSONStorableFloat NewStorableFloat(string name, float val, float min, float max)
@@ -204,7 +201,8 @@ namespace extraltodeuslExpRandPlugin
             _triggerChanceJsf = NewStorableFloat("Chance to trigger", 75f, 0f, 100f);
             _manualTriggerAction = new JSONStorableAction("Trigger transition", SetNewRandomMorphValues);
             RegisterAction(_manualTriggerAction);
-            _colliderTriggerJssc = new JSONStorableStringChooser(
+
+            _collisionTriggerJssc = new JSONStorableStringChooser(
                 "Collision trigger",
                 new List<string>
                 {
@@ -222,12 +220,40 @@ namespace extraltodeuslExpRandPlugin
                 "None",
                 "Collision trigger"
             );
-            RegisterStringChooser(_colliderTriggerJssc);
-            _filterAndSearchJsb = new JSONStorableBool("AND search", false);
-            _filterAndSearchJsb.setCallbackFunction += val => OnFilterChanged();
-            _onlyShowActiveJsb = new JSONStorableBool("Only show active morphs", false);
-            _onlyShowActiveJsb.setCallbackFunction += val => OnFilterChanged();
+            RegisterStringChooser(_collisionTriggerJssc);
+            _collisionTriggerJssc.setCallbackFunction = val =>
+            {
+                if(val != "None")
+                {
+                    _manualJsb.val = true;
+                    _randomJsb.val = true;
+                }
+            };
+            if(_collisionTriggerJssc.val != "None")
+            {
+                _manualJsb.val = true;
+                _randomJsb.val = true;
+            }
+
+            _useAndFilterJsb = new JSONStorableBool("AND filter", false)
+            {
+                setCallbackFunction = val => OnFilterChanged(),
+            };
+            _onlyShowActiveJsb = new JSONStorableBool("Active only", false)
+            {
+                setCallbackFunction = val => OnFilterChanged(),
+            };
             _pagesJss = new JSONStorableString("Pages", "");
+
+            var regionOptions = new List<string> { "All" };
+            regionOptions.AddRange(_morphModels.Select(morphModel => morphModel.UpperRegion).Distinct());
+            _regionJssc = new JSONStorableStringChooser(
+                "Region",
+                regionOptions,
+                "All",
+                "Region",
+                (string _) => OnFilterChanged()
+            );
 
             CreateLeftUI();
             CreateRightUI();
@@ -250,7 +276,7 @@ namespace extraltodeuslExpRandPlugin
         UIDynamicToggle _randomToggle;
         UIDynamicSlider _triggerChanceSlider;
         UIDynamicButton _transitionButton;
-        UIDynamicPopup _colliderTriggerPopup;
+        UIDynamicPopup _collisionTriggerPopup;
 
         void CreateLeftUI()
         {
@@ -260,9 +286,9 @@ namespace extraltodeuslExpRandPlugin
             CreateSlider(_multiJsf);
             CreateSlider(_masterSpeedJsf);
             CreateSpacer().height = 50;
-            var toggle = SmallToggle(_playJsb, 10, -668);
+            var toggle = CreateSmallToggle(_playJsb, 10, -668);
             toggle.toggle.onValueChanged.AddListener(val => toggle.textColor = val ? Color.black : _darkRed);
-            SmallToggle(_smoothJsb, 280, -668);
+            CreateSmallToggle(_smoothJsb, 280, -668);
             CreateAdditionalOptionsUI();
             CreateMoreAdditionalOptionsUI();
             SelectOptionsUI(false);
@@ -316,12 +342,14 @@ namespace extraltodeuslExpRandPlugin
             _transitionButton.buttonColor = new Color(0.5f, 1f, 0.5f);
             _manualTriggerAction.RegisterButton(_transitionButton);
 
-            _colliderTriggerPopup = CreatePopup(_colliderTriggerJssc);
-            _colliderTriggerPopup.popup.onOpenPopupHandlers += () =>
-            {
-                _manualJsb.val = true;
-                _randomJsb.val = true;
-            };
+            _collisionTriggerPopup = CreateCollisionTriggerPopup();
+
+            /* Back button is higher in hierarchy due to being parented to Content instead of LeftContent.
+             * Custom listener is added because _colliderTriggerPopup.popup doesn't have an "onClosePopupHandlers" delegate.
+             */
+            _colliderTriggerPopupListener = _collisionTriggerPopup.popup.popupPanel.gameObject.AddComponent<UnityEventsListener>();
+            _colliderTriggerPopupListener.onEnable.AddListener(() => _backButton.SetVisible(false));
+            _colliderTriggerPopupListener.onDisable.AddListener(() => _backButton.SetVisible(true));
         }
 
         void SelectOptionsUI(bool alt)
@@ -337,10 +365,11 @@ namespace extraltodeuslExpRandPlugin
             _randomToggle.SetVisible(alt);
             _triggerChanceSlider.SetVisible(alt);
             _transitionButton.SetVisible(alt);
-            _colliderTriggerPopup.SetVisible(alt);
+            _collisionTriggerPopup.SetVisible(alt);
             _backButton.SetVisible(alt);
         }
 
+        string _filterText = "";
         UIDynamicButton _prevPageButton;
         UIDynamicButton _nextPageButton;
 
@@ -416,9 +445,10 @@ namespace extraltodeuslExpRandPlugin
 
             CreateHeaderTextField("Morphs", true);
 
-            CreateToggle(_filterAndSearchJsb, true);
-            CreateToggle(_onlyShowActiveJsb, true);
-            CreateSpacer(true).height = 2;
+            var regionPopup = CreateRegionPopup();
+            CreateSmallToggle(_useAndFilterJsb, 10, -392, true);
+            CreateSmallToggle(_onlyShowActiveJsb, 280, -392, true);
+            CreateSpacer(true).height = 48;
 
             // ******* FILTER BOX ***********
             {
@@ -428,8 +458,13 @@ namespace extraltodeuslExpRandPlugin
                 _filterInputField = filterTextField.gameObject.AddComponent<InputField>();
                 _filterInputField.textComponent = filterTextField.UItext;
                 _filterInputField.lineType = InputField.LineType.SingleLine;
-                _filterInputField.onValueChanged.AddListener(_ => OnFilterChanged());
                 _filterInputField.text = filterTextJss.val;
+                _filterInputField.onValueChanged.AddListener(value =>
+                {
+                    _filterText = value == FILTER_DEFAULT_VAL ? "" : value;
+                    _filterInputField.textComponent.color = value.Length < 3 ? _rustRed : Color.black;
+                    OnFilterChanged();
+                });
 
                 var pointerListener = _filterInputField.gameObject.AddComponent<PointerUpDownListener>();
                 pointerListener.PointerDownAction = () =>
@@ -447,9 +482,16 @@ namespace extraltodeuslExpRandPlugin
             var clearSearchBtn = ClearButton();
             clearSearchBtn.button.onClick.AddListener(() =>
             {
-                _filterInputField.text = "";
+                _filterInputField.text = FILTER_DEFAULT_VAL;
                 OnFilterChanged(); // force trigger if value unchanged
             });
+
+            /* Clear button is higher in hierarchy due to being parented to Content instead of LeftContent.
+             * Custom listener is added because _colliderTriggerPopup.popup doesn't have an "onClosePopupHandlers" delegate.
+             */
+            _regionPopupListener = regionPopup.popup.popupPanel.gameObject.AddComponent<UnityEventsListener>();
+            _regionPopupListener.onEnable.AddListener(() => clearSearchBtn.SetVisible(false));
+            _regionPopupListener.onDisable.AddListener(() => clearSearchBtn.SetVisible(true));
 
             /* Dev sliders for aligning custom elements */
             // CreateSlider(_posX, true);
@@ -502,7 +544,7 @@ namespace extraltodeuslExpRandPlugin
             });
             _nextPageButton.button.interactable = false;
 
-            DisplayAll();
+            OnFilterChanged();
         }
 
         void CreateHeaderTextField(string text, bool rightSide = false)
@@ -517,12 +559,13 @@ namespace extraltodeuslExpRandPlugin
             layout.minHeight = 50;
         }
 
-        UIDynamicToggle SmallToggle(JSONStorableBool jsb, int x, int y, bool callbacks = false)
+        UIDynamicToggle CreateSmallToggle(JSONStorableBool jsb, int x, int y, bool rightSide = false, bool callbacks = false)
         {
-            var t = InstantiateToContent(manager.configurableTogglePrefab);
+            var t = InstantiateToContent(manager.configurableTogglePrefab, rightSide);
+            t.GetComponent<LayoutElement>().ignoreLayout = true;
             var rectTransform = GetRekt(t);
             rectTransform.anchoredPosition = new Vector2(x, y);
-            rectTransform.sizeDelta = new Vector2(-825, 52);
+            rectTransform.sizeDelta = new Vector2(-285, 52);
             if(callbacks)
             {
                 SetDevUISliderCallbacks(rectTransform);
@@ -550,6 +593,22 @@ namespace extraltodeuslExpRandPlugin
             return button;
         }
 
+        UIDynamicButton CreateNavButton(string label, int x, int y, bool callbacks = false)
+        {
+            var t = InstantiateToContent(manager.configurableButtonPrefab);
+            var rectTransform = GetRekt(t);
+            rectTransform.anchoredPosition = new Vector2(x, y);
+            rectTransform.sizeDelta = new Vector2(-885, 52);
+            if(callbacks)
+            {
+                SetDevUISliderCallbacks(rectTransform);
+            }
+
+            var button = t.GetComponent<UIDynamicButton>();
+            button.label = label;
+            return button;
+        }
+
         UIDynamicButton NavButton(string label, int x, int y, bool callbacks = false)
         {
             var t = InstantiateToContent(manager.configurableButtonPrefab);
@@ -564,6 +623,74 @@ namespace extraltodeuslExpRandPlugin
             var button = t.GetComponent<UIDynamicButton>();
             button.label = label;
             return button;
+        }
+
+        UIDynamicPopup CreateCollisionTriggerPopup()
+        {
+            var popup = CreateScrollablePopup(_collisionTriggerJssc);
+            var uiPopup = popup.popup;
+            popup.popupPanelHeight = 640f;
+            uiPopup.popupPanel.offsetMin += new Vector2(0, popup.popupPanelHeight + 60);
+            uiPopup.popupPanel.offsetMax += new Vector2(0, popup.popupPanelHeight + 60);
+            return popup;
+        }
+
+        UIDynamicPopup CreateRegionPopup()
+        {
+            var popup = CreateFilterablePopup(_regionJssc, true);
+            var uiPopup = popup.popup;
+
+            uiPopup.labelText.alignment = TextAnchor.UpperCenter;
+            uiPopup.labelText.GetComponent<RectTransform>().anchorMax = new Vector2(0, 0.89f);
+
+            {
+                var btn = Instantiate(manager.configurableButtonPrefab, popup.transform, false);
+                Destroy(btn.GetComponent<LayoutElement>());
+                btn.GetComponent<UIDynamicButton>().label = "<";
+                btn.GetComponent<UIDynamicButton>()
+                    .button.onClick.AddListener(
+                        () =>
+                        {
+                            uiPopup.visible = false;
+                            uiPopup.SelectPrevious();
+                        }
+                    );
+                var prevBtnRect = btn.GetComponent<RectTransform>();
+                prevBtnRect.pivot = new Vector2(0, 0);
+                prevBtnRect.anchoredPosition = new Vector2(10f, 0);
+                prevBtnRect.sizeDelta = new Vector2(0f, 0f);
+                prevBtnRect.offsetMin = new Vector2(5f, 5f);
+                prevBtnRect.offsetMax = new Vector2(80f, 70f);
+                prevBtnRect.anchorMin = new Vector2(0f, 0f);
+                prevBtnRect.anchorMax = new Vector2(0f, 0f);
+            }
+
+            {
+                var btn = Instantiate(manager.configurableButtonPrefab, popup.transform, false);
+                Destroy(btn.GetComponent<LayoutElement>());
+                btn.GetComponent<UIDynamicButton>().label = ">";
+                btn.GetComponent<UIDynamicButton>()
+                    .button.onClick.AddListener(
+                        () =>
+                        {
+                            uiPopup.visible = false;
+                            uiPopup.SelectNext();
+                        }
+                    );
+                var prevBtnRect = btn.GetComponent<RectTransform>();
+                prevBtnRect.pivot = new Vector2(0, 0);
+                prevBtnRect.anchoredPosition = new Vector2(10f, 0);
+                prevBtnRect.sizeDelta = new Vector2(0f, 0f);
+                prevBtnRect.offsetMin = new Vector2(82f, 5f);
+                prevBtnRect.offsetMax = new Vector2(157f, 70f);
+                prevBtnRect.anchorMin = new Vector2(0f, 0f);
+                prevBtnRect.anchorMax = new Vector2(0f, 0f);
+            }
+
+            const float maxHeight = 820f;
+            float height = 50f + _regionJssc.choices.Count * 60f;
+            popup.popupPanelHeight = height > maxHeight ? maxHeight : height;
+            return popup;
         }
 
         void CreatePageTextField()
@@ -586,13 +713,20 @@ namespace extraltodeuslExpRandPlugin
         {
             var t = InstantiateToContent(manager.configurableButtonPrefab);
             var rectTransform = GetRekt(t);
-            rectTransform.anchoredPosition = new Vector2(965, -419);
+            rectTransform.anchoredPosition = new Vector2(965, -470);
             rectTransform.sizeDelta = new Vector2(-970, 63);
             var button = t.GetComponent<UIDynamicButton>();
             button.label = "Clear";
             button.buttonColor = _rustRed;
             button.textColor = new Color(1f, 1f, 1f, 1f);
             return button;
+        }
+
+        Transform InstantiateToContent<T>(T prefab, bool rightSide) where T : Transform
+        {
+            var parent = UITransform.Find($"Scroll View/Viewport/Content/{(rightSide ? "Right" : "Left")}Content");
+            var childTransform = Instantiate(prefab, parent, false);
+            return childTransform;
         }
 
         Transform InstantiateToContent<T>(T prefab) where T : Transform
@@ -642,102 +776,63 @@ namespace extraltodeuslExpRandPlugin
         }
 
         bool _preventFilterChangeCallback;
-        const int ITEMS_PER_PAGE = 11;
-        List<int> _filteredIndices = new List<int>();
+        const int ITEMS_PER_PAGE = 10;
+        readonly List<int> _filteredIndices = new List<int>();
         int _currentPage;
         int _totalPages;
 
         void OnFilterChanged()
         {
-            if(!_filterInputField || _onlyShowActiveJsb == null || _filterAndSearchJsb == null || _preventFilterChangeCallback)
+            if(!_filterInputField || _regionJssc == null || _onlyShowActiveJsb == null || _useAndFilterJsb == null || _preventFilterChangeCallback)
             {
                 return;
             }
 
-            string trimmed = _filterInputField.text.Trim();
+            string trimmed = _filterText.Trim();
+            bool useTextFilter = !string.IsNullOrEmpty(trimmed) && trimmed.Length >= 3 && trimmed != FILTER_DEFAULT_VAL;
 
-            // Field reset
-            if(string.IsNullOrEmpty(trimmed))
+            var patterns = new List<string>();
+            if(useTextFilter)
             {
-                _filterInputField.text = FILTER_DEFAULT_VAL;
-                _filterInputField.Select();
-                DisplayAll();
-                return;
-            }
-
-            // not searching under 3 letters
-            if(trimmed.Length <= 3)
-            {
-                DisplayAll();
-                return;
-            }
-
-            // Grabbing the search
-            string[] searchWords = trimmed.Split(' ');
-            var searchList = new List<string>();
-
-            // Cleaning the search
-            foreach(string word in searchWords)
-            {
-                if(word.Length > 1)
+                foreach(string pattern in trimmed.Split(' '))
                 {
-                    searchList.Add(word);
+                    if(pattern.Length > 1)
+                    {
+                        patterns.Add(pattern.ToLower());
+                    }
                 }
             }
 
             _filteredIndices.Clear();
+            bool includeAll = _regionJssc.val == "All";
 
             for(int i = 0; i < _morphModels.Count; i++)
             {
                 var morphModel = _morphModels[i];
                 morphModel.Toggle.SetVisible(false);
 
-                // Displaying everything and returning if we have the default value in the field and do not try to filter active only
-                if(!_onlyShowActiveJsb.val && trimmed == FILTER_DEFAULT_VAL)
+                if(_onlyShowActiveJsb.val && !_morphModels[i].EnabledJsb.val)
                 {
-                    _filteredIndices.Add(i);
                     continue;
                 }
 
-                int searchHit = 0;
+                bool match = !useTextFilter;
 
-                if(!_onlyShowActiveJsb.val || _onlyShowActiveJsb.val && morphModel.EnabledJsb.val)
+                if(useTextFilter)
                 {
-                    // Doing word search only if we don't have the default value
-                    if(trimmed != FILTER_DEFAULT_VAL)
+                    int hits = patterns.Count(morphModel.Label.ToLower().Contains);
+                    if(!_useAndFilterJsb.val && hits > 0 || _useAndFilterJsb.val && hits == patterns.Count)
                     {
-                        foreach(string search in searchList)
-                        {
-                            string labelText = morphModel.Toggle.labelText.text.ToLower();
-                            string searchVal = search.ToLower();
-                            if(labelText.Contains(searchVal))
-                            {
-                                searchHit++;
-                            }
-                        }
-                    }
-                    else if(_onlyShowActiveJsb.val && morphModel.EnabledJsb.val)
-                    {
-                        // We have the default value in the search text and we want to only show active
-                        // So we simply make this result valid for any situation below
-                        searchHit = searchList.Count;
+                        match = true;
                     }
                 }
 
-                if(!_filterAndSearchJsb.val && searchHit > 0 || _filterAndSearchJsb.val && searchHit == searchList.Count)
+                if(match && (includeAll || morphModel.UpperRegion == _regionJssc.val))
                 {
                     _filteredIndices.Add(i);
                 }
             }
 
-            _totalPages = (int) Math.Ceiling((double) _filteredIndices.Count / ITEMS_PER_PAGE);
-            _currentPage = 0;
-            ShowTogglesOnPage();
-        }
-
-        void DisplayAll()
-        {
-            _filteredIndices = _morphModels.Select((m, i) => i).ToList();
             _totalPages = (int) Math.Ceiling((double) _filteredIndices.Count / ITEMS_PER_PAGE);
             _currentPage = 0;
             ShowTogglesOnPage();
@@ -848,9 +943,9 @@ namespace extraltodeuslExpRandPlugin
         // Thanks to VRStudy for helping for the trigger-related functions !!
         void CleanTriggers()
         {
-            foreach(string triggerName in _colliderTriggerJssc.choices)
+            foreach(string triggerName in _collisionTriggerJssc.choices)
             {
-                if(triggerName != _colliderTriggerJssc.val && triggerName != "None")
+                if(triggerName != _collisionTriggerJssc.val && triggerName != "None")
                 {
                     ClearTriggers(triggerName);
                 }
@@ -921,9 +1016,9 @@ namespace extraltodeuslExpRandPlugin
                 return;
             }
 
-            if(_colliderTriggerJssc.val != "None")
+            if(_collisionTriggerJssc.val != "None")
             {
-                CreateTrigger(_colliderTriggerJssc.val);
+                CreateTrigger(_collisionTriggerJssc.val);
                 CleanTriggers();
             }
         }
@@ -1006,6 +1101,7 @@ namespace extraltodeuslExpRandPlugin
             {
                 SuperController.singleton.onSceneSavedHandlers -= OnSceneSaved;
                 SuperController.singleton.onBeforeSceneSaveHandlers -= OnBeforeSceneSave;
+                Destroy(_colliderTriggerPopupListener);
             }
             catch(Exception e)
             {
@@ -1086,6 +1182,7 @@ namespace extraltodeuslExpRandPlugin
     {
         public DAZMorph Morph { get; }
         public string DisplayName { get; }
+        public string UpperRegion { get; }
         public string Label { get; }
         public bool DefaultOn { get; set; }
         public bool Preset1On { get; set; }
@@ -1102,8 +1199,8 @@ namespace extraltodeuslExpRandPlugin
         {
             Morph = morph;
             DisplayName = displayName;
-            string upperRegion = Regex.Split(region, "/").LastOrDefault() ?? "";
-            Label = upperRegion + "/" + DisplayName;
+            UpperRegion = Regex.Split(region, "/").LastOrDefault() ?? "";
+            Label = UpperRegion + "/" + DisplayName;
             _initialMorphValue = Morph.morphValue;
             _defaultMorphValue = _initialMorphValue;
             Morph.morphValue = 0; // TODO correct?
@@ -1198,6 +1295,68 @@ namespace extraltodeuslExpRandPlugin
                 layoutElement.transform.localScale = visible ? new Vector3(1, 1, 1) : new Vector3(0, 0, 0);
                 layoutElement.ignoreLayout = !visible;
             }
+        }
+    }
+
+    static class UIPopupExtensions
+    {
+        const int MAX_VISIBLE_COUNT = 400;
+
+        public static void SelectPrevious(this UIPopup uiPopup)
+        {
+            if(uiPopup.currentValue == uiPopup.popupValues.First())
+            {
+                uiPopup.currentValue = uiPopup.LastVisibleValue();
+            }
+            else
+            {
+                uiPopup.SetPreviousValue();
+            }
+        }
+
+        public static void SelectNext(this UIPopup uiPopup)
+        {
+            if(uiPopup.currentValue == uiPopup.LastVisibleValue())
+            {
+                uiPopup.currentValue = uiPopup.popupValues.First();
+            }
+            else
+            {
+                uiPopup.SetNextValue();
+            }
+        }
+
+        static string LastVisibleValue(this UIPopup uiPopup)
+        {
+            return uiPopup.popupValues.Length > MAX_VISIBLE_COUNT
+                ? uiPopup.popupValues[MAX_VISIBLE_COUNT - 1]
+                : uiPopup.popupValues.Last();
+        }
+    }
+
+    sealed class UnityEventsListener : MonoBehaviour
+    {
+        public bool isEnabled { get; private set; }
+        public readonly UnityEvent onEnable = new UnityEvent();
+        public readonly UnityEvent onDisable = new UnityEvent();
+
+        void OnEnable()
+        {
+            isEnabled = true;
+            onEnable.Invoke();
+        }
+
+        void OnDisable()
+        {
+            isEnabled = false;
+            onDisable.Invoke();
+        }
+
+        void OnDestroy()
+        {
+            isEnabled = false;
+            onEnable.RemoveAllListeners();
+            onDisable.RemoveAllListeners();
         }
     }
 }
