@@ -29,6 +29,8 @@ sed -i "s/0\.0\.0/$plugin_version/g" "$work_dir/meta.json"
 sed -i "s/0\.0\.0/$plugin_version/g" "$resource_dir/src/$expression_randomizer.cs"
 
 for file in $(find "$resource_dir" -type f -name "*.cs"); do
+    # set production env
+    sed -i "s/#define ENV_DEVELOPMENT/\/\//" "$file"
     # hide .cs files (plugin is loaded with .cslist)
     touch "$file".hide
 done
