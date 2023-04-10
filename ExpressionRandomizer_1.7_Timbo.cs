@@ -979,11 +979,14 @@ namespace extraltodeuslExpRandPlugin
 
             try
             {
+                float interpolant = _smoothJsb.val
+                    ? SmoothInterpolant(_animLengthJsf.val, _masterSpeedJsf.val, _timer, _animWaitJsf.val)
+                    : LinearInterpolant(_animLengthJsf.val, _masterSpeedJsf.val);
                 foreach(var morphModel in _enabledMorphs)
                 {
                     if(morphModel.EnabledJsb.val)
                     {
-                        morphModel.CalculateMorphValue(_smoothJsb.val, _animLengthJsf.val, _masterSpeedJsf.val, _timer, _animWaitJsf.val);
+                        morphModel.CalculateMorphValue(interpolant);
                     }
                 }
             }
@@ -992,6 +995,19 @@ namespace extraltodeuslExpRandPlugin
                 SuperController.LogMessage($"{nameof(ExpressionRandomizer)}: {nameof(FixedUpdate)} error: " + e);
                 enabled = false;
             }
+        }
+
+        static float SmoothInterpolant(float animLength, float masterSpeed, float timer, float animWait)
+        {
+            return Time.deltaTime *
+                animLength *
+                masterSpeed *
+                Mathf.Sin(timer / (animWait / masterSpeed) * Mathf.PI);
+        }
+
+        static float LinearInterpolant(float animLength, float masterSpeed)
+        {
+            return Time.deltaTime * animLength * masterSpeed;
         }
 
         void SetNewRandomMorphValues()
@@ -1291,11 +1307,9 @@ namespace extraltodeuslExpRandPlugin
             _currentMorphValue = Morph.morphValue;
         }
 
-        public void CalculateMorphValue(bool smooth, float animLength, float masterSpeed, float timer, float animWait)
+        public void CalculateMorphValue(float interpolant)
         {
-            _currentMorphValue = smooth
-                ? SmoothValue(animLength, masterSpeed, timer, animWait)
-                : LinearValue(animLength, masterSpeed);
+            _currentMorphValue = Mathf.Lerp(_currentMorphValue, _newMorphValue, interpolant);
             Morph.morphValue = _currentMorphValue;
         }
 
@@ -1327,20 +1341,6 @@ namespace extraltodeuslExpRandPlugin
             {
                 Morph.morphValue = 0;
             }
-        }
-
-        float SmoothValue(float animLength, float masterSpeed, float timer, float animWait)
-        {
-            return Mathf.Lerp(_currentMorphValue, _newMorphValue,
-                Time.deltaTime *
-                animLength *
-                masterSpeed *
-                Mathf.Sin(timer / (animWait / masterSpeed) * Mathf.PI));
-        }
-
-        float LinearValue(float animLength, float masterSpeed)
-        {
-            return Mathf.Lerp(_currentMorphValue, _newMorphValue, Time.deltaTime * animLength * masterSpeed);
         }
     }
 
