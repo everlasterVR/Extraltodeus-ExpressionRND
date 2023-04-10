@@ -611,51 +611,36 @@ namespace extraltodeus
             layout.minHeight = 50;
         }
 
-        UIDynamicToggle CreateSmallToggle(JSONStorableBool jsb, int x, int y, bool rightSide = false, bool callbacks = false)
+        UIDynamicToggle CreateSmallToggle(JSONStorableBool jsb, int x, int y, bool rightSide = false)
         {
             var t = InstantiateToContent(manager.configurableTogglePrefab, rightSide);
             t.GetComponent<LayoutElement>().ignoreLayout = true;
             var rectTransform = GetRekt(t);
             rectTransform.anchoredPosition = new Vector2(x, y);
             rectTransform.sizeDelta = new Vector2(-285, 52);
-            if(callbacks)
-            {
-                SetDevUISliderCallbacks(rectTransform);
-            }
-
             var toggle = t.GetComponent<UIDynamicToggle>();
             toggle.label = jsb.name;
             AddToggleToJsb(toggle, jsb);
             return toggle;
         }
 
-        UIDynamicButton CreateSmallButton(string label, int x, int y, bool callbacks = false)
+        UIDynamicButton CreateSmallButton(string label, int x, int y)
         {
             var t = InstantiateToContent(manager.configurableButtonPrefab);
             var rectTransform = GetRekt(t);
             rectTransform.anchoredPosition = new Vector2(x, y);
             rectTransform.sizeDelta = new Vector2(-825, 52);
-            if(callbacks)
-            {
-                SetDevUISliderCallbacks(rectTransform);
-            }
-
             var button = t.GetComponent<UIDynamicButton>();
             button.label = label;
             return button;
         }
 
-        UIDynamicButton CreateNavButton(string label, int x, int y, bool callbacks = false)
+        UIDynamicButton CreateNavButton(string label, int x, int y)
         {
             var t = InstantiateToContent(manager.configurableButtonPrefab);
             var rectTransform = GetRekt(t);
             rectTransform.anchoredPosition = new Vector2(x, y);
             rectTransform.sizeDelta = new Vector2(-885, 52);
-            if(callbacks)
-            {
-                SetDevUISliderCallbacks(rectTransform);
-            }
-
             var button = t.GetComponent<UIDynamicButton>();
             button.label = label;
             return button;
