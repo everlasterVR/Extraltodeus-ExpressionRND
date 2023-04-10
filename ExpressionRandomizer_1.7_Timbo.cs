@@ -3,7 +3,6 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text.RegularExpressions;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.EventSystems;
@@ -322,7 +321,7 @@ namespace extraltodeuslExpRandPlugin
             _pagesJss = new JSONStorableString("Pages", "");
 
             var regionOptions = new List<string> { "All" };
-            regionOptions.AddRange(_morphModels.Select(morphModel => morphModel.UpperRegion).Distinct());
+            regionOptions.AddRange(_morphModels.Select(morphModel => morphModel.FinalTwoRegions).Distinct());
             _regionJssc = new JSONStorableStringChooser(
                 "Region",
                 regionOptions,
@@ -910,7 +909,7 @@ namespace extraltodeuslExpRandPlugin
                     }
                 }
 
-                if(match && (includeAll || morphModel.UpperRegion == _regionJssc.val))
+                if(match && (includeAll || morphModel.FinalTwoRegions == _regionJssc.val))
                 {
                     _filteredIndices.Add(i);
                 }
@@ -942,7 +941,7 @@ namespace extraltodeuslExpRandPlugin
                 {
                     var morphToggle = _morphToggles[i % 10];
                     toggleToJSONStorableBool[morphToggle] = morphModel.EnabledJsb;
-                    morphToggle.label = morphModel.Label;
+                    morphToggle.label = _regionJssc.val == "All" ? morphModel.Label : morphModel.DisplayName;
                     morphModel.EnabledJsb.toggle = morphToggle.toggle;
                     morphToggle.toggle.isOn = morphModel.EnabledJsb.val;
                     morphToggle.toggle.onValueChanged.AddListener((val) => morphModel.EnabledJsb.val = val);
@@ -1314,7 +1313,9 @@ namespace extraltodeuslExpRandPlugin
     sealed class MorphModel
     {
         readonly DAZMorph _morph;
-        public string UpperRegion { get; }
+        public string DisplayName { get; }
+        public string FinalTwoRegions { get; }
+        public string FinalRegion { get; }
         public string Label { get; }
         public bool DefaultOn { get; set; }
         public bool Preset1On { get; set; }
@@ -1329,8 +1330,15 @@ namespace extraltodeuslExpRandPlugin
         public MorphModel(DAZMorph morph, string displayName, string region)
         {
             _morph = morph;
-            UpperRegion = Regex.Split(region, "/").LastOrDefault() ?? "";
-            Label = UpperRegion + "/" + displayName;
+            DisplayName = displayName;
+
+            string[] regions = region.Split('/');
+            int lastIndex = regions.Length - 1;
+            int secondLastIndex = lastIndex - 1;
+            FinalRegion = lastIndex > -1 ? regions[lastIndex] : "";
+            FinalTwoRegions = secondLastIndex > -1 ? regions[secondLastIndex] + "/" + FinalRegion : FinalRegion;
+
+            Label = FinalRegion + "/" + DisplayName;
             _initialMorphValue = _morph.morphValue;
             _defaultMorphValue = _initialMorphValue;
             _morph.morphValue = 0;
