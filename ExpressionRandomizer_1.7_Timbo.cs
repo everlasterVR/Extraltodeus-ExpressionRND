@@ -337,6 +337,7 @@ namespace extraltodeuslExpRandPlugin
             _enabledMorphs = _morphModels.Where(item => item.EnabledJsb.val).ToList();
             SuperController.singleton.onBeforeSceneSaveHandlers += OnBeforeSceneSave;
             SuperController.singleton.onSceneSavedHandlers += OnSceneSaved;
+            OnFilterChanged();
             _initialized = true;
         }
 
@@ -456,6 +457,8 @@ namespace extraltodeuslExpRandPlugin
         UIDynamicButton _prevPageButton;
         UIDynamicButton _nextPageButton;
         UIDynamicPopup _regionPopup;
+
+        readonly UIDynamicToggle[] _morphToggles = new UIDynamicToggle[10];
 
         void CreateRightUI()
         {
@@ -606,8 +609,11 @@ namespace extraltodeuslExpRandPlugin
 
                     _enabledMorphs = _morphModels.Where(item => item.EnabledJsb.val).ToList();
                 };
-                morphModel.Toggle = CreateToggle(morphModel.EnabledJsb, true);
-                morphModel.Toggle.SetVisible(false);
+            }
+
+            for(int i = 0; i < 10; i++)
+            {
+                _morphToggles[i] = CreateToggle(new JSONStorableBool("enabled{i}", false), true);
             }
 
             _prevPageButton = NavButton("< Prev", 549, -1205);
@@ -637,8 +643,6 @@ namespace extraltodeuslExpRandPlugin
                 }
             });
             _nextPageButton.button.interactable = false;
-
-            OnFilterChanged();
         }
 
         void CreateHeaderTextField(string text, int fontSize, bool rightSide = false)
@@ -889,7 +893,6 @@ namespace extraltodeuslExpRandPlugin
             for(int i = 0; i < _morphModels.Count; i++)
             {
                 var morphModel = _morphModels[i];
-                morphModel.Toggle.SetVisible(false);
 
                 if(_onlyShowActiveJsb.val && !_morphModels[i].EnabledJsb.val)
                 {
@@ -924,11 +927,39 @@ namespace extraltodeuslExpRandPlugin
                 ? "<size=8>\n</size>1 / 1"
                 : $"<size=8>\n</size>{_currentPage + 1} / {_totalPages}";
 
+            foreach(var morphToggle in _morphToggles)
+            {
+                morphToggle.toggle.onValueChanged.RemoveAllListeners();
+                toggleToJSONStorableBool.Remove(morphToggle);
+                morphToggle.SetVisible(true);
+            }
+
             for(int i = 0; i < _filteredIndices.Count; i++)
             {
-                int index = _filteredIndices[i];
-                bool isVisible = i >= _currentPage * ITEMS_PER_PAGE && i < (_currentPage + 1) * ITEMS_PER_PAGE;
-                _morphModels[index].Toggle.SetVisible(isVisible);
+                bool isOnPage = i >= _currentPage * ITEMS_PER_PAGE && i < (_currentPage + 1) * ITEMS_PER_PAGE;
+                var morphModel = _morphModels[_filteredIndices[i]];
+                if(isOnPage)
+                {
+                    var morphToggle = _morphToggles[i % 10];
+                    toggleToJSONStorableBool[morphToggle] = morphModel.EnabledJsb;
+                    morphToggle.label = morphModel.Label;
+                    morphModel.EnabledJsb.toggle = morphToggle.toggle;
+                    morphToggle.toggle.isOn = morphModel.EnabledJsb.val;
+                    morphToggle.toggle.onValueChanged.AddListener((val) => morphModel.EnabledJsb.val = val);
+                }
+                else
+                {
+                    morphModel.EnabledJsb.toggle = null;
+                }
+            }
+
+            /* Hide toggles not associated with any storable on the final page */
+            if(_currentPage == _totalPages - 1 || _totalPages == 0)
+            {
+                for(int i = _filteredIndices.Count % 10; i < ITEMS_PER_PAGE; i++)
+                {
+                    _morphToggles[i].SetVisible(false);
+                }
             }
 
             if(_prevPageButton)
@@ -1289,7 +1320,6 @@ namespace extraltodeuslExpRandPlugin
         public bool Preset1On { get; set; }
         public bool Preset2On { get; set; }
         public JSONStorableBool EnabledJsb { get; set; }
-        public UIDynamicToggle Toggle { get; set; }
 
         readonly float _initialMorphValue;
         float _defaultMorphValue;
