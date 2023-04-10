@@ -19,6 +19,27 @@ namespace extraltodeus
             return false;
         }
 
+        bool _uiInitialized;
+
+        protected override Action OnUIEnabled()
+        {
+            return UIEnabled;
+        }
+
+        void UIEnabled()
+        {
+            if(_uiInitialized)
+            {
+                return;
+            }
+
+            CreateLeftUI();
+            CreateRightUI();
+
+            _uiInitialized = true;
+            OnFilterChanged();
+        }
+
         protected override Action OnUIDisabled()
         {
             return UIDisabled;
@@ -226,6 +247,8 @@ namespace extraltodeus
             _multiJsf = NewStorableFloat("Multiplier", 1f, 0f, 2f);
             _masterSpeedJsf = NewStorableFloat("Master speed", 1f, 0f, 10f);
             _playJsb = NewStorableBool("Play", true);
+            _playJsb.setCallbackFunction = value => _play = value;
+            _play = _playJsb.val;
             _smoothJsb = NewStorableBool("Smooth", true);
             _animWaitJsf = NewStorableFloat("Loop length", 2f, 0.1f, 20f);
             _animLengthJsf = NewStorableFloat("Morphing speed", 1.0f, 0.1f, 20f);
@@ -289,13 +312,28 @@ namespace extraltodeus
                 (string _) => OnFilterChanged()
             );
 
-            CreateLeftUI();
-            CreateRightUI();
+            _enabledMorphs = new List<MorphModel>();
+            foreach(var morphModel in _morphModels)
+            {
+                morphModel.EnabledJsb = NewStorableBool(morphModel.Label, morphModel.DefaultOn);
+                morphModel.EnabledJsb.setCallbackFunction = on =>
+                {
+                    if(!on)
+                    {
+                        morphModel.ZeroValue();
+                    }
 
-            _enabledMorphs = _morphModels.Where(item => item.EnabledJsb.val).ToList();
+                    _enabledMorphs.Clear();
+                    _enabledMorphs.AddRange(_morphModels.Where(item => item.EnabledJsb.val));
+                };
+                if(morphModel.EnabledJsb.val)
+                {
+                    _enabledMorphs.Add(morphModel);
+                }
+            }
+
             SuperController.singleton.onBeforeSceneSaveHandlers += OnBeforeSceneSave;
             SuperController.singleton.onSceneSavedHandlers += OnSceneSaved;
-            OnFilterChanged();
             initialized = true;
         }
 
@@ -551,23 +589,10 @@ namespace extraltodeus
             // CreateSlider(_sizeX, true);
             // CreateSlider(_sizeY, true);
 
-            foreach(var morphModel in _morphModels)
-            {
-                morphModel.EnabledJsb = NewStorableBool(morphModel.Label, morphModel.DefaultOn);
-                morphModel.EnabledJsb.setCallbackFunction = on =>
-                {
-                    if(!on)
-                    {
-                        morphModel.ZeroValue();
-                    }
-
-                    _enabledMorphs = _morphModels.Where(item => item.EnabledJsb.val).ToList();
-                };
-            }
-
             for(int i = 0; i < 10; i++)
             {
-                _morphToggles[i] = CreateToggle(new JSONStorableBool("enabled{i}", false), true);
+                /* Morph toggles initialized with the storables of the first 10 morph models. Should be always correct on init. */
+                _morphToggles[i] = CreateToggle(_morphModels[i].EnabledJsb, true);
             }
 
             _prevPageButton = CreateNavButton("< Prev", 549, -1205);
@@ -794,7 +819,7 @@ namespace extraltodeus
 
         void OnFilterChanged()
         {
-            if(!_filterInputField || _regionJssc == null || _onlyShowActiveJsb == null || _useAndFilterJsb == null || _preventFilterChangeCallback)
+            if(!_filterInputField || _preventFilterChangeCallback || !_uiInitialized)
             {
                 return;
             }
@@ -900,13 +925,15 @@ namespace extraltodeus
             }
         }
 
+        bool _play;
         bool _globalAnimationFrozen;
+        bool SkipUpdate => !_play || _globalAnimationFrozen || !enabled || _savingScene || initialized != true || _restoringFromJson;
         float _timer;
 
         void Update()
         {
             _globalAnimationFrozen = Utils.GlobalAnimationFrozen();
-            if(!_playJsb.val || _globalAnimationFrozen || _savingScene || initialized != true || _restoringFromJson)
+            if(SkipUpdate)
             {
                 return;
             }
@@ -932,7 +959,7 @@ namespace extraltodeus
 
         void FixedUpdate()
         {
-            if(!_playJsb.val || !enabled || _globalAnimationFrozen || _savingScene || initialized != true || _restoringFromJson)
+            if(SkipUpdate)
             {
                 return;
             }
