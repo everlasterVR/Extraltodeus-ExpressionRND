@@ -13,6 +13,85 @@ namespace extraltodeuslExpRandPlugin
 {
     sealed class ExpressionRandomizer : MVRScript
     {
+        readonly Color _backgroundGray = new Color(0.85f, 0.85f, 0.85f);
+        readonly Color _rustRed = new Color(0.6f, 0.3f, 0.3f, 1f);
+        readonly Color _darkRed = new Color(0.75f, 0f, 0f, 1f);
+
+#region InitUI
+
+        UnityEventsListener _pluginUIEventsListener;
+
+        public override void InitUI()
+        {
+            base.InitUI();
+            if(!UITransform || _pluginUIEventsListener)
+            {
+                return;
+            }
+
+            StartCoroutine(InitUICo());
+        }
+
+        bool _inEnabledCo;
+
+        IEnumerator InitUICo()
+        {
+            _pluginUIEventsListener = UITransform.gameObject.AddComponent<UnityEventsListener>();
+            _pluginUIEventsListener.onEnable.AddListener(() => StartCoroutine(OnUIEnabledCo()));
+
+            while(_initialized == null)
+            {
+                yield return null;
+            }
+
+            if(_initialized == false)
+            {
+                enabledJSON.val = false;
+                yield break;
+            }
+
+            _pluginUIEventsListener.onDisable.AddListener(() => StartCoroutine(OnUIDisabledCo()));
+        }
+
+        IEnumerator OnUIEnabledCo()
+        {
+            if(_inEnabledCo)
+            {
+                /* When VAM UI is toggled back on with the plugin UI already active, onEnable gets called twice and onDisable once.
+                 * This ensures onEnable logic executes just once.
+                 */
+                yield break;
+            }
+
+            _inEnabledCo = true;
+            var background = rightUIContent.parent.parent.parent.transform.GetComponent<Image>();
+            background.color = _backgroundGray;
+            _inEnabledCo = false;
+        }
+
+        IEnumerator OnUIDisabledCo()
+        {
+            if(_inEnabledCo)
+            {
+                /* When VAM UI is toggled back on with the plugin UI already active, onEnable gets called twice and onDisable once.
+                 * This ensures only onEnable logic executes.
+                 */
+                yield break;
+            }
+
+            if(_collisionTriggerPopup)
+            {
+                _collisionTriggerPopup.popup.visible = false;
+            }
+
+            if(_regionPopup)
+            {
+                _regionPopup.popup.visible = false;
+            }
+        }
+
+#endregion
+
         readonly string[] _excludeRegions =
         {
             "Arms",
@@ -89,7 +168,7 @@ namespace extraltodeuslExpRandPlugin
             "Eye Roll Back_DD",
         };
 
-        bool _initialized;
+        bool? _initialized;
         bool _restoringFromJson;
         List<MorphModel> _enabledMorphs;
         readonly List<MorphModel> _morphModels = new List<MorphModel>();
@@ -118,9 +197,6 @@ namespace extraltodeuslExpRandPlugin
         UnityEventsListener _regionPopupListener;
 
         GenerateDAZMorphsControlUI _morphsControlUI;
-
-        readonly Color _rustRed = new Color(0.6f, 0.3f, 0.3f, 1f);
-        readonly Color _darkRed = new Color(0.75f, 0f, 0f, 1f);
 
         const string FILTER_DEFAULT_VAL = "Filter morphs...";
 
@@ -280,7 +356,7 @@ namespace extraltodeuslExpRandPlugin
 
         void CreateLeftUI()
         {
-            CreateHeaderTextField("Expression Randomizer");
+            CreateHeaderTextField("Expression Randomizer v1.7.2", 34);
             CreateSlider(_minJsf);
             CreateSlider(_maxJsf);
             CreateSlider(_multiJsf);
@@ -301,7 +377,7 @@ namespace extraltodeuslExpRandPlugin
             _moreButton.textColor = Color.white;
             _moreButton.button.onClick.AddListener(() => SelectOptionsUI(true));
 
-            CreateHeaderTextField("Additional Options");
+            CreateHeaderTextField("Additional Options", 30);
 
             _loopLengthSlider = CreateSlider(_animWaitJsf);
             _morphingSpeedSlider = CreateSlider(_animLengthJsf);
@@ -348,7 +424,14 @@ namespace extraltodeuslExpRandPlugin
              * Custom listener is added because _colliderTriggerPopup.popup doesn't have an "onClosePopupHandlers" delegate.
              */
             _colliderTriggerPopupListener = _collisionTriggerPopup.popup.popupPanel.gameObject.AddComponent<UnityEventsListener>();
-            _colliderTriggerPopupListener.onEnable.AddListener(() => _backButton.SetVisible(false));
+            _colliderTriggerPopupListener.onEnable.AddListener(() =>
+            {
+                _backButton.SetVisible(false);
+                if(_regionPopup)
+                {
+                    _regionPopup.popup.visible = false;
+                }
+            });
             _colliderTriggerPopupListener.onDisable.AddListener(() => _backButton.SetVisible(true));
         }
 
@@ -372,6 +455,7 @@ namespace extraltodeuslExpRandPlugin
         string _filterText = "";
         UIDynamicButton _prevPageButton;
         UIDynamicButton _nextPageButton;
+        UIDynamicPopup _regionPopup;
 
         void CreateRightUI()
         {
@@ -443,9 +527,9 @@ namespace extraltodeuslExpRandPlugin
                 }
             });
 
-            CreateHeaderTextField("Morphs", true);
+            CreateHeaderTextField("Morphs", 30, true);
 
-            var regionPopup = CreateRegionPopup();
+            _regionPopup = CreateRegionPopup();
             CreateSmallToggle(_useAndFilterJsb, 10, -392, true);
             CreateSmallToggle(_onlyShowActiveJsb, 280, -392, true);
             CreateSpacer(true).height = 48;
@@ -489,8 +573,16 @@ namespace extraltodeuslExpRandPlugin
             /* Clear button is higher in hierarchy due to being parented to Content instead of LeftContent.
              * Custom listener is added because _colliderTriggerPopup.popup doesn't have an "onClosePopupHandlers" delegate.
              */
-            _regionPopupListener = regionPopup.popup.popupPanel.gameObject.AddComponent<UnityEventsListener>();
-            _regionPopupListener.onEnable.AddListener(() => clearSearchBtn.SetVisible(false));
+            _regionPopupListener = _regionPopup.popup.popupPanel.gameObject.AddComponent<UnityEventsListener>();
+            _regionPopupListener.onEnable.AddListener(() =>
+            {
+                if(_collisionTriggerPopup)
+                {
+                    _collisionTriggerPopup.popup.visible = false;
+                }
+
+                clearSearchBtn.SetVisible(false);
+            });
             _regionPopupListener.onDisable.AddListener(() => clearSearchBtn.SetVisible(true));
 
             /* Dev sliders for aligning custom elements */
@@ -547,13 +639,13 @@ namespace extraltodeuslExpRandPlugin
             OnFilterChanged();
         }
 
-        void CreateHeaderTextField(string text, bool rightSide = false)
+        void CreateHeaderTextField(string text, int fontSize, bool rightSide = false)
         {
             var jss = new JSONStorableString(text, text);
             var textField = CreateTextField(jss, rightSide);
-            textField.UItext.fontSize = 30;
+            textField.UItext.fontSize = fontSize;
             textField.backgroundColor = Color.clear;
-            textField.text = $"<size=8>\n</size><b>{jss.val}</b>";
+            textField.text = $"<size=8>\n</size>{jss.val}";
             var layout = textField.GetComponent<LayoutElement>();
             layout.preferredHeight = 50;
             layout.minHeight = 50;
@@ -593,22 +685,6 @@ namespace extraltodeuslExpRandPlugin
             return button;
         }
 
-        UIDynamicButton CreateNavButton(string label, int x, int y, bool callbacks = false)
-        {
-            var t = InstantiateToContent(manager.configurableButtonPrefab);
-            var rectTransform = GetRekt(t);
-            rectTransform.anchoredPosition = new Vector2(x, y);
-            rectTransform.sizeDelta = new Vector2(-885, 52);
-            if(callbacks)
-            {
-                SetDevUISliderCallbacks(rectTransform);
-            }
-
-            var button = t.GetComponent<UIDynamicButton>();
-            button.label = label;
-            return button;
-        }
-
         UIDynamicButton NavButton(string label, int x, int y, bool callbacks = false)
         {
             var t = InstantiateToContent(manager.configurableButtonPrefab);
@@ -628,6 +704,7 @@ namespace extraltodeuslExpRandPlugin
         UIDynamicPopup CreateCollisionTriggerPopup()
         {
             var popup = CreateScrollablePopup(_collisionTriggerJssc);
+            popup.labelTextColor = Color.black;
             var uiPopup = popup.popup;
             popup.popupPanelHeight = 640f;
             uiPopup.popupPanel.offsetMin += new Vector2(0, popup.popupPanelHeight + 60);
@@ -638,6 +715,7 @@ namespace extraltodeuslExpRandPlugin
         UIDynamicPopup CreateRegionPopup()
         {
             var popup = CreateFilterablePopup(_regionJssc, true);
+            popup.labelTextColor = Color.black;
             var uiPopup = popup.popup;
 
             uiPopup.labelText.alignment = TextAnchor.UpperCenter;
@@ -700,7 +778,7 @@ namespace extraltodeuslExpRandPlugin
             rectTransform.anchoredPosition = new Vector2(740, -1205);
             rectTransform.sizeDelta = new Vector2(-949, 52);
             var textField = t.GetComponent<UIDynamicTextField>();
-            textField.textColor = Color.white;
+            textField.textColor = Color.black;
             textField.backgroundColor = Color.clear;
             textField.text = _pagesJss.val;
             textField.UItext.fontSize = 30;
@@ -868,7 +946,7 @@ namespace extraltodeuslExpRandPlugin
         void Update()
         {
             _globalAnimationFrozen = GlobalAnimationFrozen();
-            if(!_playJsb.val || _globalAnimationFrozen || _savingScene || !_initialized || _restoringFromJson)
+            if(!_playJsb.val || _globalAnimationFrozen || _savingScene || _initialized != true || _restoringFromJson)
             {
                 return;
             }
@@ -894,7 +972,7 @@ namespace extraltodeuslExpRandPlugin
 
         void FixedUpdate()
         {
-            if(!_playJsb.val || !enabled || _globalAnimationFrozen || _savingScene || !_initialized || _restoringFromJson)
+            if(!_playJsb.val || !enabled || _globalAnimationFrozen || _savingScene || _initialized != true || _restoringFromJson)
             {
                 return;
             }
@@ -1060,9 +1138,14 @@ namespace extraltodeuslExpRandPlugin
             bool setMissingToDefault
         )
         {
-            while(!_initialized)
+            while(_initialized == null)
             {
                 yield return null;
+            }
+
+            if(_initialized == false)
+            {
+                yield break;
             }
 
             base.RestoreFromJSON(jc, restorePhysical, restoreAppearance, presetAtoms, setMissingToDefault);
@@ -1099,9 +1182,10 @@ namespace extraltodeuslExpRandPlugin
         {
             try
             {
+                DestroyImmediate(_pluginUIEventsListener);
+                Destroy(_colliderTriggerPopupListener);
                 SuperController.singleton.onSceneSavedHandlers -= OnSceneSaved;
                 SuperController.singleton.onBeforeSceneSaveHandlers -= OnBeforeSceneSave;
-                Destroy(_colliderTriggerPopupListener);
             }
             catch(Exception e)
             {
@@ -1336,25 +1420,21 @@ namespace extraltodeuslExpRandPlugin
 
     sealed class UnityEventsListener : MonoBehaviour
     {
-        public bool isEnabled { get; private set; }
         public readonly UnityEvent onEnable = new UnityEvent();
         public readonly UnityEvent onDisable = new UnityEvent();
 
         void OnEnable()
         {
-            isEnabled = true;
             onEnable.Invoke();
         }
 
         void OnDisable()
         {
-            isEnabled = false;
             onDisable.Invoke();
         }
 
         void OnDestroy()
         {
-            isEnabled = false;
             onEnable.RemoveAllListeners();
             onDisable.RemoveAllListeners();
         }
