@@ -523,7 +523,10 @@ namespace extraltodeuslExpRandPlugin
                 _playJsb.val = false;
                 foreach(var morphModel in _morphModels)
                 {
-                    morphModel.ZeroValue();
+                    if(morphModel.EnabledJsb.val)
+                    {
+                        morphModel.ZeroValue();
+                    }
                 }
             });
 
@@ -598,8 +601,7 @@ namespace extraltodeuslExpRandPlugin
                 {
                     if(!on)
                     {
-                        var morph = _morphsControlUI.GetMorphByDisplayName(morphModel.DisplayName);
-                        morph.morphValue = 0;
+                        morphModel.ZeroValue();
                     }
 
                     _enabledMorphs = _morphModels.Where(item => item.EnabledJsb.val).ToList();
@@ -1280,8 +1282,7 @@ namespace extraltodeuslExpRandPlugin
 
     sealed class MorphModel
     {
-        public DAZMorph Morph { get; }
-        public string DisplayName { get; }
+        readonly DAZMorph _morph;
         public string UpperRegion { get; }
         public string Label { get; }
         public bool DefaultOn { get; set; }
@@ -1297,20 +1298,19 @@ namespace extraltodeuslExpRandPlugin
 
         public MorphModel(DAZMorph morph, string displayName, string region)
         {
-            Morph = morph;
-            DisplayName = displayName;
+            _morph = morph;
             UpperRegion = Regex.Split(region, "/").LastOrDefault() ?? "";
-            Label = UpperRegion + "/" + DisplayName;
-            _initialMorphValue = Morph.morphValue;
+            Label = UpperRegion + "/" + displayName;
+            _initialMorphValue = _morph.morphValue;
             _defaultMorphValue = _initialMorphValue;
-            Morph.morphValue = 0; // TODO correct?
-            _currentMorphValue = Morph.morphValue;
+            _morph.morphValue = 0;
+            _currentMorphValue = _morph.morphValue;
         }
 
         public void CalculateMorphValue(float interpolant)
         {
             _currentMorphValue = Mathf.Lerp(_currentMorphValue, _newMorphValue, interpolant);
-            Morph.morphValue = _currentMorphValue;
+            _morph.morphValue = _currentMorphValue;
         }
 
         public void SetNewMorphValue(float min, float max, float multi, bool aba)
@@ -1322,25 +1322,22 @@ namespace extraltodeuslExpRandPlugin
 
         public void UpdateDefaultValue()
         {
-            _defaultMorphValue = Morph.morphValue;
+            _defaultMorphValue = _morph.morphValue;
         }
 
         public void ResetToDefault()
         {
-            Morph.morphValue = _defaultMorphValue;
+            _morph.morphValue = _defaultMorphValue;
         }
 
         public void ResetToInitial()
         {
-            Morph.morphValue = _initialMorphValue;
+            _morph.morphValue = _initialMorphValue;
         }
 
         public void ZeroValue()
         {
-            if(EnabledJsb.val)
-            {
-                Morph.morphValue = 0;
-            }
+            _morph.morphValue = 0;
         }
     }
 
