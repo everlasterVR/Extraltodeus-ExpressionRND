@@ -78,6 +78,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ExpressionRandomizer_1.7_Timbo.cs" />
+    <Compile Include="src\ExpressionRandomizer.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include=".gitignore" />
@@ -86,6 +87,7 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include=".editorconfig" />
+    <Content Include="scripts\generate_cslist.sh" />
     <Content Include="scripts\package.sh" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

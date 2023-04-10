@@ -4,13 +4,15 @@
   "packageName" : "Extraltodeus-ExpressionRND",
   "standardReferenceVersionOption" : "Latest",
   "scriptReferenceVersionOption" : "Exact",
-  "description" : "Plugin originally by extraltodeus. Modified by Hazmhox and everlaster",
-  "credits" : "",
+  "description" : "v0.0.0. Randomizes expressions with various parameters and morphs.",
+  "credits" : "Original plugin by extraltodeus. Improved upon by hazmhox and everlaster",
   "instructions" : "Place onto person object. Select morphs and options.",
   "promotionalLink" : "",
   "programVersion" : "1.22.0.1",
   "contentList" : [
-    "Custom/Scripts/VamTimbo/ExpressionRandomizer_1.7_Timbo.cs"
+    "Custom/Scripts/__Frequently Used/ExpressionRandomizer_1.7_Timbo.cs",
+    "Custom/Scripts/everlaster/Extraltodeus-ExpressionRND/ExpressionRandomizer.cslist",
+    "Custom/Scripts/everlaster/Extraltodeus-ExpressionRND/src"
   ],
   "dependencies" : {
   },

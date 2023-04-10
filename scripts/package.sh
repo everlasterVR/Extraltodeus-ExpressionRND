@@ -2,8 +2,7 @@
 
 set -e
 
-author_name=VamTimbo
-resource_name=Extraltodeus-ExpressionRND
+expression_randomizer=ExpressionRandomizer
 
 package_version=$1
 [ -z "$package_version" ] && printf "Usage: ./package.sh [var package version]\n" && exit 1
@@ -11,18 +10,32 @@ package_version=$1
 plugin_version=$(git describe --tags --match "v*" --abbrev=0 HEAD 2>/dev/null | sed s/v//)
 [ -z "$plugin_version" ] && printf "Git tag not set on current commit.\n" && exit 1
 
-# packaging: main
+# packaging
 work_dir=publish
-mkdir -p work_dir
-
-resource_dir="$work_dir/Custom/Scripts/__Frequently Used"
-mkdir -p "$resource_dir"
+mkdir -p "$work_dir"
 cp meta.json "$work_dir/"
-cp ExpressionRandomizer_1.7_Timbo.cs "$resource_dir/"
+
+legacy_resource_dir="$work_dir/Custom/Scripts/__Frequently Used"
+mkdir -p "$legacy_resource_dir"
+cp "$expression_randomizer"_1.7_Timbo.cs "$legacy_resource_dir/"
+
+resource_dir="$work_dir/Custom/Scripts/everlaster/Extraltodeus-ExpressionRND"
+mkdir -p "$resource_dir"
+cp "$expression_randomizer.cslist" "$resource_dir/"
+cp -r src "$resource_dir/"
+
+# update version info
+sed -i "s/0\.0\.0/$plugin_version/g" "$work_dir/meta.json"
+sed -i "s/0\.0\.0/$plugin_version/g" "$resource_dir/src/$expression_randomizer.cs"
+
+for file in $(find "$resource_dir" -type f -name "*.cs"); do
+    # hide .cs files (plugin is loaded with .cslist)
+    touch "$file".hide
+done
 
 # zip files to .var and cleanup
 printf "Creating package...\n"
-package_file="$author_name.$resource_name.$package_version.var"
+package_file="VamTimbo.Extraltodeus-ExpressionRND.$package_version.var"
 cd $work_dir
 zip -rq "$package_file" ./*
 printf "Package %s created for plugin version v%s.\n" "$package_file" "$plugin_version"
