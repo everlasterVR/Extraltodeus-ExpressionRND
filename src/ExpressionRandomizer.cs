@@ -4,6 +4,7 @@ using SimpleJSON;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.UI;
@@ -77,6 +78,20 @@ namespace extraltodeus
             "Pose Controls/JCM", // JointCorrect morphs by FallenDancer
         };
 
+        readonly string[] _poseRegions =
+        {
+            "Pose",
+            "Expressions",
+        };
+
+        // particular morph names to add
+        readonly string[] _tailorList =
+        {
+            "Pupils Dialate",
+            "Eye Roll Back_DD",
+        };
+
+        // TODO convert flirt preset
         readonly string[] _defaultOn =
         {
             "Brow Outer Up Left",
@@ -94,12 +109,7 @@ namespace extraltodeus
             "Lips Pucker",
         };
 
-        readonly string[] _poseRegions =
-        {
-            "Pose",
-            "Expressions",
-        };
-
+        // TODO convert enjoy preset
         readonly string[] _preset1 =
         {
             "Brow Inner Up Left",
@@ -115,6 +125,7 @@ namespace extraltodeus
             "Pupils Dialate",
         };
 
+        // TODO convert to idle preset
         readonly string[] _preset2 =
         {
             "Brow Inner Up Left",
@@ -125,13 +136,6 @@ namespace extraltodeus
             "Eyes Closed",
             "Eyes Squint Left",
             "Eyes Squint Right",
-        };
-
-        // particular morph names to add
-        readonly string[] _tailorList =
-        {
-            "Pupils Dialate",
-            "Eye Roll Back_DD",
         };
 
         bool _restoringFromJson;
@@ -482,7 +486,7 @@ namespace extraltodeus
 
         void CreateAdditionalOptionsUI()
         {
-            _moreButton = CreateNavButton("More >", 339, -733);
+            _moreButton = CreateCustomButton("More >", new Vector2(339, -733), -885);
             _moreButton.buttonColor = Color.gray;
             _moreButton.textColor = Color.white;
             _moreButton.button.onClick.AddListener(() => SelectOptionsUI(true));
@@ -494,7 +498,7 @@ namespace extraltodeus
 
         void CreateMoreAdditionalOptionsUI()
         {
-            _backButton = CreateNavButton("< Back", 339, -733);
+            _backButton = CreateCustomButton("< Back", new Vector2(339, -733), -885);
             _backButton.buttonColor = Color.gray;
             _backButton.textColor = Color.white;
             _backButton.button.onClick.AddListener(() => SelectOptionsUI(false));
@@ -544,13 +548,13 @@ namespace extraltodeus
         UIDynamicButton _nextPageButton;
         UIDynamicPopup _regionPopup;
 
-        readonly UIDynamicToggle[] _morphToggles = new UIDynamicToggle[10];
+        readonly UIDynamicToggle[] _morphToggles = new UIDynamicToggle[ITEMS_PER_PAGE];
 
         void CreateRightUI()
         {
-            CreateHeaderTextField("Morphs", 32, true);
+            CreateHeaderTextField("  Morphs", 32, true);
 
-            var selectNoneButton = CreateCustomButton("Select none", new Vector2(717, -65), -920, true);
+            var selectNoneButton = CreateCustomButton("Select none", new Vector2(717, -65), -920);
             selectNoneButton.buttonText.fontSize = 26;
             selectNoneButton.button.onClick.AddListener(() =>
             {
@@ -625,16 +629,19 @@ namespace extraltodeus
 
             // CreateDevSliders();
 
-            for(int i = 0; i < 10; i++)
+            for(int i = 0; i < ITEMS_PER_PAGE; i++)
             {
-                /* Morph toggles initialized with the storables of the first 10 morph models.
-                 * Should be always correct on init.
-                 * There are always way more than 10 suitable morphs (built in)
-                 */
+                if(_morphModels.Count < ITEMS_PER_PAGE)
+                {
+                    Loggr.Message($"Fatal: less than {ITEMS_PER_PAGE} morphs found.");
+                    break;
+                }
+
+                /* Morph toggles initialized with the storables of the first 10 morph models. Should be always correct on init. */
                 _morphToggles[i] = CreateToggle(_morphModels[i].EnabledJsb, true);
             }
 
-            _prevPageButton = CreateNavButton("< Prev", 549, -1205);
+            _prevPageButton = CreateCustomButton("< Prev", new Vector2(549, -1205), -885);
             _prevPageButton.buttonColor = Color.gray;
             _prevPageButton.textColor = Color.white;
             _prevPageButton.button.onClick.AddListener(() =>
@@ -649,7 +656,7 @@ namespace extraltodeus
 
             CreatePageTextField();
 
-            _nextPageButton = CreateNavButton("Next >", 880, -1205);
+            _nextPageButton = CreateCustomButton("Next >", new Vector2(880, -1205), -885);
             _nextPageButton.buttonColor = Color.gray;
             _nextPageButton.textColor = Color.white;
             _nextPageButton.button.onClick.AddListener(() =>
@@ -675,13 +682,18 @@ namespace extraltodeus
             layout.minHeight = 50;
         }
 
-        UIDynamicToggle CreateSmallToggle(JSONStorableBool jsb, int x, int y, bool rightSide = false)
+        UIDynamicToggle CreateSmallToggle(JSONStorableBool jsb, int x, int y, bool rightSide = false, bool callbacks = false)
         {
             var t = InstantiateToContent(manager.configurableTogglePrefab, rightSide);
             t.GetComponent<LayoutElement>().ignoreLayout = true;
             var rectTransform = GetRekt(t);
             rectTransform.anchoredPosition = new Vector2(x, y);
             rectTransform.sizeDelta = new Vector2(-285, 52);
+            if(callbacks)
+            {
+                SetDevUISliderCallbacks(rectTransform);
+            }
+
             var toggle = t.GetComponent<UIDynamicToggle>();
             toggle.label = jsb.name;
             AddToggleToJsb(toggle, jsb);
@@ -704,15 +716,22 @@ namespace extraltodeus
             return button;
         }
 
-        UIDynamicButton CreateNavButton(string label, int x, int y)
+        [SuppressMessage("ReSharper", "UnusedMember.Local")]
+        UIDynamicSlider CreateCustomSlider(string label, Vector2 pos, Vector2 size, bool callbacks = false)
         {
-            var t = InstantiateToContent(manager.configurableButtonPrefab);
+            var t = InstantiateToContent(manager.configurableSliderPrefab);
             var rectTransform = GetRekt(t);
-            rectTransform.anchoredPosition = new Vector2(x, y);
-            rectTransform.sizeDelta = new Vector2(-885, 52);
-            var button = t.GetComponent<UIDynamicButton>();
-            button.label = label;
-            return button;
+            rectTransform.anchoredPosition = pos;
+            rectTransform.sizeDelta = size;
+            if(callbacks)
+            {
+                SetDevUISliderCallbacks(rectTransform);
+            }
+
+            var slider = t.GetComponent<UIDynamicSlider>();
+            slider.rangeAdjustEnabled = false;
+            slider.label = label;
+            return slider;
         }
 
         UIDynamicPopup CreateCollisionTriggerPopup()
@@ -856,7 +875,7 @@ namespace extraltodeus
         }
 
         bool _preventFilterChangeCallback;
-        const int ITEMS_PER_PAGE = 10;
+        const int ITEMS_PER_PAGE = 13;
         readonly List<int> _filteredIndices = new List<int>();
         int _currentPage;
         int _totalPages;
@@ -1178,7 +1197,7 @@ namespace extraltodeus
         #if ENV_DEVELOPMENT
 
         readonly JSONStorableFloat _posX = new JSONStorableFloat("posX", 0, 0, 1000);
-        readonly JSONStorableFloat _posY = new JSONStorableFloat("posY", 0, -1000, 1000);
+        readonly JSONStorableFloat _posY = new JSONStorableFloat("posY", 0, -2000, 1000);
         readonly JSONStorableFloat _sizeX = new JSONStorableFloat("sizeX", 0, -1000, 1000);
         readonly JSONStorableFloat _sizeY = new JSONStorableFloat("sizeY", 0, -1000, 1000);
 
@@ -1199,6 +1218,11 @@ namespace extraltodeus
 
         void SetDevUISliderCallbacks(RectTransform rectTransform)
         {
+            if(_posX == null || _posY == null || _sizeX == null || _sizeY == null)
+            {
+                return;
+            }
+
             var anchoredPosition = rectTransform.anchoredPosition;
             _posX.defaultVal = anchoredPosition.x;
             _posY.defaultVal = anchoredPosition.y;
