@@ -47,7 +47,7 @@ namespace extraltodeuslExpRandPlugin
                 ["id"] = "PluginManager",
                 ["plugins"] = new JSONClass
                 {
-                    [uid] = $"{GetPackagePath()}Custom/Scripts/everlaster/Extraltodeus-ExpressionRND/ExpressionRandomizer.cslist",
+                    [uid] = $"{GetPackagePath()}Custom/Scripts/__Frequently Used/ExpressionRandomizer.cslist",
                 },
             });
             storedParams["id"] = storedParams["id"].Value.Replace("extraltodeuslExpRandPlugin", "extraltodeus");
