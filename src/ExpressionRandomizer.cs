@@ -350,11 +350,11 @@ namespace extraltodeus
 
             _useAndFilterJsb = new JSONStorableBool("AND filter", false)
             {
-                setCallbackFunction = val => OnFilterChanged(),
+                setCallbackFunction = _ => OnFilterChanged(),
             };
             _onlyShowActiveJsb = new JSONStorableBool("Active only", false)
             {
-                setCallbackFunction = val => OnFilterChanged(),
+                setCallbackFunction = _ => OnFilterChanged(),
             };
             _pagesJss = new JSONStorableString("Pages", "");
 
@@ -593,32 +593,27 @@ namespace extraltodeus
             CreateSpacer(true).height = 48;
 
             _filterInputField = CreateFilterInputField();
-
-            // ******* FILTER BOX ***********
+            _filterInputField.onValueChanged.AddListener(value =>
             {
+                _filterText = value == FILTER_DEFAULT_VAL ? "" : value;
+                _filterInputField.textComponent.color = value.Length < 3 ? Colors.rustRed : Color.black;
+                OnFilterChanged();
+            });
 
-                _filterInputField.onValueChanged.AddListener(value =>
+            var filterInputPointerListener = _filterInputField.gameObject.AddComponent<PointerUpDownListener>();
+            filterInputPointerListener.PointerDownAction = () =>
+            {
+                _preventFilterChangeCallback = true;
+                if(_filterInputField.text == FILTER_DEFAULT_VAL)
                 {
-                    _filterText = value == FILTER_DEFAULT_VAL ? "" : value;
-                    _filterInputField.textComponent.color = value.Length < 3 ? Colors.rustRed : Color.black;
-                    OnFilterChanged();
-                });
+                    _filterInputField.text = "";
+                }
 
-                var pointerListener = _filterInputField.gameObject.AddComponent<PointerUpDownListener>();
-                pointerListener.PointerDownAction = () =>
-                {
-                    _preventFilterChangeCallback = true;
-                    if(_filterInputField.text == FILTER_DEFAULT_VAL)
-                    {
-                        _filterInputField.text = "";
-                    }
+                _preventFilterChangeCallback = false;
+            };
 
-                    _preventFilterChangeCallback = false;
-                };
-            }
-
-            var clearSearchBtn = ClearButton();
-            clearSearchBtn.button.onClick.AddListener(() =>
+            var clearButton = ClearButton();
+            clearButton.button.onClick.AddListener(() =>
             {
                 _filterInputField.text = FILTER_DEFAULT_VAL;
                 OnFilterChanged(); // force trigger if value unchanged
@@ -635,9 +630,9 @@ namespace extraltodeus
                     _collisionTriggerPopup.popup.visible = false;
                 }
 
-                clearSearchBtn.SetVisible(false);
+                clearButton.SetVisible(false);
             });
-            _regionPopupListener.onDisable.AddListener(() => clearSearchBtn.SetVisible(true));
+            _regionPopupListener.onDisable.AddListener(() => clearButton.SetVisible(true));
 
             /* Dev sliders for aligning custom elements */
             // CreateSlider(_posX, true);
@@ -647,7 +642,10 @@ namespace extraltodeus
 
             for(int i = 0; i < 10; i++)
             {
-                /* Morph toggles initialized with the storables of the first 10 morph models. Should be always correct on init. */
+                /* Morph toggles initialized with the storables of the first 10 morph models.
+                 * Should be always correct on init.
+                 * There are always way more than 10 suitable morphs (built in)
+                 */
                 _morphToggles[i] = CreateToggle(_morphModels[i].EnabledJsb, true);
             }
 
