@@ -81,7 +81,6 @@
     <Compile Include="src\Components\PointerUpDownListener.cs" />
     <Compile Include="src\Components\UnityEventsListener.cs" />
     <Compile Include="src\ExpressionRandomizer.cs" />
-    <Compile Include="src\Extensions\AtomExtensions.cs" />
     <Compile Include="src\Extensions\UIDynamicExtensions.cs" />
     <Compile Include="src\Extensions\UIDynamicTextFieldExtensions.cs" />
     <Compile Include="src\Extensions\UIPopupExtensions.cs" />
