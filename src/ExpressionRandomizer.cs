@@ -163,6 +163,7 @@ namespace extraltodeus
         UnityEventsListener _regionPopupListener;
 
         const string EXP_RAND_TRIGGER = "ExpRandTrigger";
+        const string COLLISION_TRIGGER_DEFAULT_VAL = "None";
         const string FILTER_DEFAULT_VAL = "Filter morphs...";
 
         void Start()
@@ -178,10 +179,61 @@ namespace extraltodeus
                 return;
             }
 
-            if(_collisionTriggerJssc.val != "None")
+            if(_collisionTriggerJssc.val != COLLISION_TRIGGER_DEFAULT_VAL)
             {
                 CreateTrigger(_collisionTriggerJssc.val);
-                CleanTriggers();
+                ClearOtherTriggers();
+            }
+        }
+
+        void CreateTrigger(string triggerName)
+        {
+            var collisionTrigger = containingAtom.GetStorableByID(triggerName) as CollisionTrigger;
+            if(!CheckIfTriggerExists(collisionTrigger))
+            {
+                if(collisionTrigger)
+                {
+                    collisionTrigger.enabled = true;
+                    var startTrigger = collisionTrigger.trigger.CreateDiscreteActionStartInternal();
+                    startTrigger.name = EXP_RAND_TRIGGER;
+                    startTrigger.receiverAtom = containingAtom;
+                    startTrigger.receiver = this;
+                    startTrigger.receiverTargetName = _manualTriggerAction.name;
+                }
+            }
+        }
+
+        void ClearOtherTriggers()
+        {
+            foreach(string triggerName in _collisionTriggerJssc.choices)
+            {
+                if(triggerName != _collisionTriggerJssc.val && triggerName != COLLISION_TRIGGER_DEFAULT_VAL)
+                {
+                    ClearTriggers(triggerName);
+                }
+            }
+        }
+
+        void ClearTriggers(string triggerName)
+        {
+            var collisionTrigger = containingAtom.GetStorableByID(triggerName) as CollisionTrigger;
+            if(collisionTrigger)
+            {
+                var triggerJSON = collisionTrigger.trigger.GetJSON();
+                var startActions = triggerJSON["startActions"].AsArray;
+                for(int i = 0; i < startActions.Count; i++)
+                {
+                    if(startActions[i]["name"].Value == EXP_RAND_TRIGGER)
+                    {
+                        startActions.Remove(i);
+                    }
+                }
+
+                collisionTrigger.trigger.RestoreFromJSON(triggerJSON);
+            }
+            else
+            {
+                Loggr.Message($"{nameof(ClearTriggers)} error: Couldn't find trigger " + triggerName);
             }
         }
 
@@ -263,7 +315,7 @@ namespace extraltodeus
                 "Collision trigger",
                 new List<string>
                 {
-                    "None",
+                    COLLISION_TRIGGER_DEFAULT_VAL,
                     "LipTrigger",
                     "MouthTrigger",
                     "ThroatTrigger",
@@ -274,16 +326,20 @@ namespace extraltodeus
                     "DeepVaginaTrigger",
                     "DeeperVaginaTrigger",
                 },
-                "None",
+                COLLISION_TRIGGER_DEFAULT_VAL,
                 "Collision trigger"
             );
             RegisterStringChooser(_collisionTriggerJssc);
             _collisionTriggerJssc.setCallbackFunction = val =>
             {
-                if(val != "None")
+                if(val != COLLISION_TRIGGER_DEFAULT_VAL)
                 {
                     _manualJsb.val = true;
                     _randomJsb.val = true;
+                }
+                else
+                {
+                    ClearOtherTriggers();
                 }
             };
             if(_collisionTriggerJssc.val != "None")
@@ -1013,41 +1069,6 @@ namespace extraltodeus
             }
         }
 
-        // Thanks to VRStudy for helping for the trigger-related functions !! -hazm, probably
-        void CleanTriggers()
-        {
-            foreach(string triggerName in _collisionTriggerJssc.choices)
-            {
-                if(triggerName != _collisionTriggerJssc.val && triggerName != "None")
-                {
-                    ClearTriggers(triggerName);
-                }
-            }
-        }
-
-        void ClearTriggers(string triggerName)
-        {
-            var trig = containingAtom.GetStorableByID(triggerName) as CollisionTrigger;
-            if(trig)
-            {
-                var trigClass = trig.trigger.GetJSON();
-                var trigArray = trigClass["startActions"].AsArray;
-                for(int i = 0; i < trigArray.Count; i++)
-                {
-                    if(trigArray[i]["name"].Value == EXP_RAND_TRIGGER)
-                    {
-                        trigArray.Remove(i);
-                    }
-                }
-
-                trig.trigger.RestoreFromJSON(trigClass);
-            }
-            else
-            {
-                Loggr.Message($"{nameof(ClearTriggers)} error: Couldn't find trigger " + triggerName);
-            }
-        }
-
         static bool CheckIfTriggerExists(CollisionTrigger trig)
         {
             JSONNode presentTriggers = trig.trigger.GetJSON();
@@ -1063,23 +1084,6 @@ namespace extraltodeus
             }
 
             return false;
-        }
-
-        void CreateTrigger(string triggerName)
-        {
-            var trig = containingAtom.GetStorableByID(triggerName) as CollisionTrigger;
-            if(!CheckIfTriggerExists(trig))
-            {
-                if(trig)
-                {
-                    trig.enabled = true;
-                    var startTrigger = trig.trigger.CreateDiscreteActionStartInternal();
-                    startTrigger.name = EXP_RAND_TRIGGER;
-                    startTrigger.receiverAtom = containingAtom;
-                    startTrigger.receiver = containingAtom.GetPluginStorableById("ExpressionRandomizer"); // TODO this
-                    startTrigger.receiverTargetName = _manualTriggerAction.name;
-                }
-            }
         }
 
         void ResetMorphs()
