@@ -234,16 +234,25 @@ namespace extraltodeus
                     }
                 }
 
+                Debug.Log("2");
                 collisionTrigger.trigger.RestoreFromJSON(triggerJSON);
             }
             else
             {
+                Debug.Log("3");
                 Loggr.Message($"{nameof(ClearTriggers)} error: Couldn't find trigger " + triggerName);
             }
         }
 
         public override void Init()
         {
+            if(containingAtom.type != "Person")
+            {
+                Loggr.Error($"Add to a Person atom, not {containingAtom.type}.");
+                enabled = false;
+                return;
+            }
+
             StartCoroutine(InitCo());
         }
 
