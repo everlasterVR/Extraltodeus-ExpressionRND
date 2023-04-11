@@ -57,6 +57,8 @@ namespace extraltodeus
             {
                 _regionPopup.popup.visible = false;
             }
+
+            SetPresetTargetButtonsActive(false);
         }
 
         readonly string[] _excludeRegions =
@@ -109,8 +111,10 @@ namespace extraltodeus
             "Lips Pucker",
         };
 
+        readonly JSONClass[] _customPresetJSONs = { null, null };
+
         // TODO convert enjoy preset
-        readonly string[] _preset1 =
+        readonly string[] _flirtOn =
         {
             "Brow Inner Up Left",
             "Brow Inner Up Right",
@@ -126,7 +130,7 @@ namespace extraltodeus
         };
 
         // TODO convert to idle preset
-        readonly string[] _preset2 =
+        readonly string[] _enjoyOn =
         {
             "Brow Inner Up Left",
             "Brow Inner Up Right",
@@ -227,8 +231,8 @@ namespace extraltodeus
                     var morphModel = new MorphModel(morph, morph.displayName, morph.region)
                     {
                         DefaultOn = _defaultOn.Any(morph.displayName.Equals),
-                        Preset1On = _preset1.Any(morph.displayName.Equals),
-                        Preset2On = _preset2.Any(morph.displayName.Equals),
+                        FlirtOn = _flirtOn.Any(morph.displayName.Equals),
+                        EnjoyOn = _enjoyOn.Any(morph.displayName.Equals),
                     };
                     _morphModels.Add(morphModel);
                 }
@@ -410,6 +414,15 @@ namespace extraltodeus
             }
         }
 
+        UIDynamicButton _idlePresetButton;
+        UIDynamicButton _flirtPresetButton;
+        UIDynamicButton _enjoyPresetButton;
+        UIDynamicButton _saveButton;
+        UIDynamicButton _loadButton;
+        UIDynamicButton _preset1Button;
+        UIDynamicButton _preset2Button;
+        UIDynamicButton _fileButton;
+
         UIDynamicButton _moreButton;
         UIDynamicSlider _loopLengthSlider;
         UIDynamicSlider _morphingSpeedSlider;
@@ -419,16 +432,28 @@ namespace extraltodeus
         UIDynamicToggle _manualToggle;
         UIDynamicToggle _randomToggle;
         UIDynamicSlider _triggerChanceSlider;
-        UIDynamicButton _transitionButton;
+        UIDynamicButton _triggerTransitionButton;
         UIDynamicPopup _collisionTriggerPopup;
+
+        bool _isLoadingPreset;
+        bool _isSavingPreset;
 
         void CreateLeftUI()
         {
-            CreateSpacer().height = 50f;
+            CreateSpacer().height = 106f;
 
-            var selectIdlePresetButton = CreateCustomButton("Idle", new Vector2(10, -62), -912);
-            selectIdlePresetButton.button.onClick.AddListener(() =>
+            _idlePresetButton = CreateCustomButton("Idle", new Vector2(10, -62), new Vector2(-910, 52));
+            _idlePresetButton.buttonColor = new Color(0.66f, 0.77f, 0.88f);
+
+            _flirtPresetButton = CreateCustomButton("Flirt", new Vector2(10 + 175, -62), new Vector2(-910, 52));
+            _flirtPresetButton.buttonColor = new Color(0.88f, 0.77f, 0.66f);
+
+            _enjoyPresetButton = CreateCustomButton("Enjoy", new Vector2(10 + 175 * 2, -62), new Vector2(-910, 52));
+            _enjoyPresetButton.buttonColor = new Color(0.88f, 0.66f, 0.77f);
+
+            _idlePresetButton.button.onClick.AddListener(() =>
             {
+                SetBuiltInPresetSelected(_idlePresetButton);
                 foreach(var morphModel in _morphModels)
                 {
                     if(_manualJsb.val)
@@ -440,10 +465,9 @@ namespace extraltodeus
                     morphModel.EnabledJsb.val = morphModel.DefaultOn;
                 }
             });
-
-            var selectFlirtPresetButton = CreateCustomButton("Flirt", new Vector2(10 + 178, -62), -912);
-            selectFlirtPresetButton.button.onClick.AddListener(() =>
+            _flirtPresetButton.button.onClick.AddListener(() =>
             {
+                SetBuiltInPresetSelected(_flirtPresetButton);
                 foreach(var morphModel in _morphModels)
                 {
                     if(_manualJsb.val)
@@ -452,13 +476,12 @@ namespace extraltodeus
                         _masterSpeedJsf.val = 3.0f;
                     }
 
-                    morphModel.EnabledJsb.val = morphModel.Preset1On;
+                    morphModel.EnabledJsb.val = morphModel.FlirtOn;
                 }
             });
-
-            var selectEnjoyPresetButton = CreateCustomButton("Enjoy", new Vector2(10 + 178 * 2, -62), -912);
-            selectEnjoyPresetButton.button.onClick.AddListener(() =>
+            _enjoyPresetButton.button.onClick.AddListener(() =>
             {
+                SetBuiltInPresetSelected(_enjoyPresetButton);
                 foreach(var morphModel in _morphModels)
                 {
                     if(_manualJsb.val)
@@ -467,7 +490,41 @@ namespace extraltodeus
                         _masterSpeedJsf.val = 4.2f;
                     }
 
-                    morphModel.EnabledJsb.val = morphModel.Preset2On;
+                    morphModel.EnabledJsb.val = morphModel.EnjoyOn;
+                }
+            });
+
+            // TODO what if this preset actually active in JSON?
+            if(!_restoringFromJson)
+            {
+                SetBuiltInPresetSelected(_idlePresetButton);
+            }
+
+            _saveButton = CreateCustomButton("Save", new Vector2(10, -118), new Vector2(-981, 52));
+            _saveButton.button.onClick.AddListener(() => StartCoroutine(OnSaveButtonClicked()));
+
+            _loadButton = CreateCustomButton("Load", new Vector2(10 + 103, -118), new Vector2(-981, 52));
+            _loadButton.button.onClick.AddListener(() => StartCoroutine(OnLoadButtonClicked()));
+
+            _preset1Button = CreateCustomButton("1", new Vector2(10 + 230, -118), new Vector2(-986, 52));
+            _preset1Button.SetActiveStyle(false, true);
+            _preset1Button.button.onClick.AddListener(() => OnCustomPresetButtonClicked(1));
+
+            _preset2Button = CreateCustomButton("2", new Vector2(10 + 329, -118), new Vector2(-986, 52));
+            _preset2Button.SetActiveStyle(false, true);
+            _preset2Button.button.onClick.AddListener(() => OnCustomPresetButtonClicked(2));
+
+            _fileButton = CreateCustomButton("File", new Vector2(10 + 427, -118), new Vector2(-986, 52));
+            _fileButton.SetActiveStyle(false, true);
+            _fileButton.button.onClick.AddListener(() =>
+            {
+                if(_isSavingPreset)
+                {
+                    // TODO file browser
+                }
+                else if(_isLoadingPreset)
+                {
+                    // TODO file browser
                 }
             });
 
@@ -475,22 +532,123 @@ namespace extraltodeus
             CreateSlider(_maxJsf);
             CreateSlider(_multiJsf);
             CreateSlider(_masterSpeedJsf);
-            CreateSpacer().height = 50;
-            var toggle = CreateSmallToggle(_playJsb, 10, -668);
+            CreateSpacer().height = 106;
+            var toggle = CreateCustomToggle(_playJsb, new Vector2(10, -721), -285);
             toggle.toggle.onValueChanged.AddListener(val => toggle.textColor = val ? Color.black : Colors.darkRed);
-            CreateSmallToggle(_smoothJsb, 280, -668);
+            CreateCustomToggle(_smoothJsb, new Vector2(280, -721), -285);
+
+            _triggerTransitionButton = CreateCustomButton("Trigger transition now", new Vector2(10, -778), new Vector2(-555, 47));
+            _triggerTransitionButton.buttonText.fontSize = 26;
+            _manualTriggerAction.RegisterButton(_triggerTransitionButton);
+
             CreateAdditionalOptionsUI();
             CreateMoreAdditionalOptionsUI();
             SelectOptionsUI(false);
         }
 
+        void OnCustomPresetButtonClicked(int customPreset)
+        {
+            int index = customPreset - 1;
+            if(_isSavingPreset)
+            {
+                _customPresetJSONs[index] = GetJSON();
+            }
+            else if(_isLoadingPreset)
+            {
+                var presetJSON = _customPresetJSONs[index];
+                if(presetJSON == null)
+                {
+                    Loggr.Message($"Preset {customPreset} is not saved yet.");
+                }
+                else
+                {
+                    RestoreFromJSON(presetJSON);
+                    SetBuiltInPresetSelected(null);
+                }
+            }
+        }
+
+        void SetBuiltInPresetSelected(UIDynamicButton button)
+        {
+            _idlePresetButton.label = "Idle";
+            _flirtPresetButton.label = "Flirt";
+            _enjoyPresetButton.label = "Enjoy";
+
+            _idlePresetButton.SetNormalFocusedColor();
+            _flirtPresetButton.SetNormalFocusedColor();
+            _enjoyPresetButton.SetNormalFocusedColor();
+
+            if(button)
+            {
+                button.label = button.label.Bold();
+                button.SetInvisibleFocusedColor();
+            }
+        }
+
+        void SetPresetTargetButtonsActive(bool value)
+        {
+            _preset1Button.SetActiveStyle(value, true);
+            _preset2Button.SetActiveStyle(value, true);
+            _fileButton.SetActiveStyle(value, true);
+        }
+
+        IEnumerator OnSaveButtonClicked()
+        {
+            _isSavingPreset = true;
+            _isLoadingPreset = false;
+            SetPresetTargetButtonsActive(true);
+            _saveButton.SetInvisibleFocusedColor();
+            _loadButton.SetActiveStyle(false, true);
+
+            float timeout = Time.unscaledTime + 5;
+            while(Time.unscaledTime < timeout)
+            {
+                yield return null;
+            }
+
+            _isSavingPreset = false;
+            SetPresetTargetButtonsActive(false);
+            _saveButton.SetNormalFocusedColor();
+            _loadButton.SetActiveStyle(true);
+        }
+
+        IEnumerator OnLoadButtonClicked()
+        {
+            _isSavingPreset = false;
+            _isLoadingPreset = true;
+
+            SetPresetTargetButtonsActive(true);
+            _loadButton.SetInvisibleFocusedColor();
+            _saveButton.SetActiveStyle(false, true);
+
+            float timeout = Time.unscaledTime + 5;
+            while(Time.unscaledTime < timeout)
+            {
+                yield return null;
+            }
+
+            _isLoadingPreset = false;
+            SetPresetTargetButtonsActive(false);
+            _loadButton.SetNormalFocusedColor();
+            _saveButton.SetActiveStyle(true);
+        }
+
         void CreateAdditionalOptionsUI()
         {
-            _moreButton = CreateCustomButton("More >", new Vector2(339, -733), -885);
+            _moreButton = CreateCustomButton("More >", new Vector2(339, -837), new Vector2(-885, 52));
             _moreButton.buttonColor = Color.gray;
             _moreButton.textColor = Color.white;
             _moreButton.button.onClick.AddListener(() => SelectOptionsUI(true));
-            CreateHeaderTextField("Additional Options", 32);
+            {
+                var jss = new JSONStorableString("Additional Options", "Additional Options");
+                var textField = CreateTextField(jss);
+                textField.UItext.fontSize = 30;
+                textField.backgroundColor = Color.clear;
+                textField.text = jss.val;
+                var layout = textField.GetComponent<LayoutElement>();
+                layout.preferredHeight = 38;
+                layout.minHeight = 38;
+            }
             _loopLengthSlider = CreateSlider(_animWaitJsf);
             _morphingSpeedSlider = CreateSlider(_animLengthJsf);
             _abaToggle = CreateToggle(_abaJsb);
@@ -498,7 +656,7 @@ namespace extraltodeus
 
         void CreateMoreAdditionalOptionsUI()
         {
-            _backButton = CreateCustomButton("< Back", new Vector2(339, -733), -885);
+            _backButton = CreateCustomButton("< Back", new Vector2(339, -837), new Vector2(-885, 52));
             _backButton.buttonColor = Color.gray;
             _backButton.textColor = Color.white;
             _backButton.button.onClick.AddListener(() => SelectOptionsUI(false));
@@ -506,10 +664,6 @@ namespace extraltodeus
             _manualToggle = CreateToggle(_manualJsb);
             _randomToggle = CreateToggle(_randomJsb);
             _triggerChanceSlider = CreateSlider(_triggerChanceJsf);
-
-            _transitionButton = CreateButton("Trigger Transition");
-            _transitionButton.buttonColor = new Color(0.5f, 1f, 0.5f);
-            _manualTriggerAction.RegisterButton(_transitionButton);
 
             _collisionTriggerPopup = CreateCollisionTriggerPopup();
 
@@ -538,7 +692,6 @@ namespace extraltodeus
             _manualToggle.SetVisible(alt);
             _randomToggle.SetVisible(alt);
             _triggerChanceSlider.SetVisible(alt);
-            _transitionButton.SetVisible(alt);
             _collisionTriggerPopup.SetVisible(alt);
             _backButton.SetVisible(alt);
         }
@@ -552,9 +705,18 @@ namespace extraltodeus
 
         void CreateRightUI()
         {
-            CreateHeaderTextField("  Morphs", 32, true);
+            {
+                var jss = new JSONStorableString("Morphs Header", "  Morphs");
+                var textField = CreateTextField(jss, true);
+                textField.UItext.fontSize = 32;
+                textField.backgroundColor = Color.clear;
+                textField.text = "\n".Size(8) + jss.val;
+                var layout = textField.GetComponent<LayoutElement>();
+                layout.preferredHeight = 50;
+                layout.minHeight = 50;
+            }
 
-            var selectNoneButton = CreateCustomButton("Select none", new Vector2(717, -65), -920);
+            var selectNoneButton = CreateCustomButton("Select none", new Vector2(717, -65), new Vector2(-920, 52));
             selectNoneButton.buttonText.fontSize = 26;
             selectNoneButton.button.onClick.AddListener(() =>
             {
@@ -564,7 +726,7 @@ namespace extraltodeus
                 }
             });
 
-            var zeroSelectedButton = CreateCustomButton("Zero selected", new Vector2(890, -65), -900);
+            var zeroSelectedButton = CreateCustomButton("Zero selected", new Vector2(890, -65), new Vector2(-900, 52));
             zeroSelectedButton.buttonText.fontSize = 26;
             zeroSelectedButton.buttonColor = Colors.rustRed;
             zeroSelectedButton.textColor = Color.white;
@@ -582,8 +744,10 @@ namespace extraltodeus
             });
 
             _regionPopup = CreateRegionPopup();
-            CreateSmallToggle(_useAndFilterJsb, 10, -392, true);
-            CreateSmallToggle(_onlyShowActiveJsb, 280, -392, true);
+
+            CreateSpacer(true).height = 42;
+            CreateCustomToggle(_useAndFilterJsb, new Vector2(10, -252), -285, true);
+            CreateCustomToggle(_onlyShowActiveJsb, new Vector2(280, -252), -285, true);
 
             _filterInputField = CreateFilterInputField();
             _filterInputField.onValueChanged.AddListener(value =>
@@ -641,7 +805,7 @@ namespace extraltodeus
                 _morphToggles[i] = CreateToggle(_morphModels[i].EnabledJsb, true);
             }
 
-            _prevPageButton = CreateCustomButton("< Prev", new Vector2(549, -1205), -885);
+            _prevPageButton = CreateCustomButton("< Prev", new Vector2(549, -1229), new Vector2(-885, 52), true);
             _prevPageButton.buttonColor = Color.gray;
             _prevPageButton.textColor = Color.white;
             _prevPageButton.button.onClick.AddListener(() =>
@@ -656,7 +820,7 @@ namespace extraltodeus
 
             CreatePageTextField();
 
-            _nextPageButton = CreateCustomButton("Next >", new Vector2(880, -1205), -885);
+            _nextPageButton = CreateCustomButton("Next >", new Vector2(880, -1229), new Vector2(-885, 52));
             _nextPageButton.buttonColor = Color.gray;
             _nextPageButton.textColor = Color.white;
             _nextPageButton.button.onClick.AddListener(() =>
@@ -670,25 +834,13 @@ namespace extraltodeus
             _nextPageButton.button.interactable = false;
         }
 
-        void CreateHeaderTextField(string text, int fontSize, bool rightSide = false)
-        {
-            var jss = new JSONStorableString(text, text);
-            var textField = CreateTextField(jss, rightSide);
-            textField.UItext.fontSize = fontSize;
-            textField.backgroundColor = Color.clear;
-            textField.text = $"<size=8>\n</size>{jss.val}";
-            var layout = textField.GetComponent<LayoutElement>();
-            layout.preferredHeight = 50;
-            layout.minHeight = 50;
-        }
-
-        UIDynamicToggle CreateSmallToggle(JSONStorableBool jsb, int x, int y, bool rightSide = false, bool callbacks = false)
+        UIDynamicToggle CreateCustomToggle(JSONStorableBool jsb, Vector2 pos, int sizeX, bool rightSide = false, bool callbacks = false)
         {
             var t = InstantiateToContent(manager.configurableTogglePrefab, rightSide);
             t.GetComponent<LayoutElement>().ignoreLayout = true;
             var rectTransform = GetRekt(t);
-            rectTransform.anchoredPosition = new Vector2(x, y);
-            rectTransform.sizeDelta = new Vector2(-285, 52);
+            rectTransform.anchoredPosition = pos;
+            rectTransform.sizeDelta = new Vector2(sizeX, 52);
             if(callbacks)
             {
                 SetDevUISliderCallbacks(rectTransform);
@@ -700,12 +852,12 @@ namespace extraltodeus
             return toggle;
         }
 
-        UIDynamicButton CreateCustomButton(string label, Vector2 pos, int sizeX, bool callbacks = false)
+        UIDynamicButton CreateCustomButton(string label, Vector2 pos, Vector2 size, bool callbacks = false)
         {
             var t = InstantiateToContent(manager.configurableButtonPrefab);
             var rectTransform = GetRekt(t);
             rectTransform.anchoredPosition = pos;
-            rectTransform.sizeDelta = new Vector2(sizeX, 52);
+            rectTransform.sizeDelta = size;
             if(callbacks)
             {
                 SetDevUISliderCallbacks(rectTransform);
@@ -809,7 +961,7 @@ namespace extraltodeus
         {
             var t = InstantiateToContent(manager.configurableTextFieldPrefab);
             var rectTransform = GetRekt(t);
-            rectTransform.anchoredPosition = new Vector2(740, -1205);
+            rectTransform.anchoredPosition = new Vector2(740, -1223);
             rectTransform.sizeDelta = new Vector2(-949, 52);
             var textField = t.GetComponent<UIDynamicTextField>();
             textField.textColor = Color.black;
@@ -825,10 +977,11 @@ namespace extraltodeus
         {
             var t = InstantiateToContent(manager.configurableButtonPrefab);
             var rectTransform = GetRekt(t);
-            rectTransform.anchoredPosition = new Vector2(973, -259);
+            rectTransform.anchoredPosition = new Vector2(973, -321);
             rectTransform.sizeDelta = new Vector2(-980, 48);
             var button = t.GetComponent<UIDynamicButton>();
             button.label = "Clear";
+            button.buttonText.fontSize = 26;
             button.buttonColor = Colors.rustRed;
             button.textColor = new Color(1f, 1f, 1f, 1f);
             return button;
@@ -839,8 +992,8 @@ namespace extraltodeus
             var filterTextJss = new JSONStorableString("FilterText", FILTER_DEFAULT_VAL);
             var filterTextField = CreateTextField(filterTextJss, true);
             var tfLayout = filterTextField.GetComponent<LayoutElement>();
-            tfLayout.preferredHeight = tfLayout.minHeight = 50;
-            filterTextField.height = 50;
+            tfLayout.preferredHeight = tfLayout.minHeight = 53;
+            filterTextField.height = 53;
             filterTextField.DisableScrollOnText();
             _filterInputField = filterTextField.gameObject.AddComponent<InputField>();
             _filterInputField.textComponent = filterTextField.UItext;
@@ -939,8 +1092,8 @@ namespace extraltodeus
         void ShowTogglesOnPage()
         {
             _pagesJss.val = _totalPages == 0
-                ? "<size=8>\n</size>1 / 1"
-                : $"<size=8>\n</size>{_currentPage + 1} / {_totalPages}";
+                ? "\n".Size(8) + "1 / 1"
+                : "\n".Size(8) + $"{_currentPage + 1} / {_totalPages}";
 
             foreach(var morphToggle in _morphToggles)
             {
@@ -1198,7 +1351,7 @@ namespace extraltodeus
 
         readonly JSONStorableFloat _posX = new JSONStorableFloat("posX", 0, 0, 1000);
         readonly JSONStorableFloat _posY = new JSONStorableFloat("posY", 0, -2000, 1000);
-        readonly JSONStorableFloat _sizeX = new JSONStorableFloat("sizeX", 0, -1000, 1000);
+        readonly JSONStorableFloat _sizeX = new JSONStorableFloat("sizeX", 0, -1200, 1000);
         readonly JSONStorableFloat _sizeY = new JSONStorableFloat("sizeY", 0, -1000, 1000);
 
         void CreateDevSliders()

@@ -14,8 +14,8 @@ namespace ExpressionRND.Models
 
         public string Label { get; }
         public bool DefaultOn { get; set; }
-        public bool Preset1On { get; set; }
-        public bool Preset2On { get; set; }
+        public bool FlirtOn { get; set; }
+        public bool EnjoyOn { get; set; }
         public JSONStorableBool EnabledJsb { get; set; }
 
         float _initialMorphValue;
