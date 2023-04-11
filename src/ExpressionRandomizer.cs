@@ -135,6 +135,7 @@ namespace extraltodeus
         };
 
         bool _restoringFromJson;
+        Atom _person;
         GenerateDAZMorphsControlUI _morphsControlUI;
         List<MorphModel> _enabledMorphs;
         readonly List<MorphModel> _morphModels = new List<MorphModel>();
@@ -165,84 +166,6 @@ namespace extraltodeus
         const string EXP_RAND_TRIGGER = "ExpRandTrigger";
         const string COLLISION_TRIGGER_DEFAULT_VAL = "None";
         const string FILTER_DEFAULT_VAL = "Filter morphs...";
-
-        void Start()
-        {
-            _timer = 0f;
-            InvokeRepeating(nameof(TriggerMaintainer), 3f, 3f); // To check if the selected collision trigger is still there every 3 seconds
-        }
-
-        void TriggerMaintainer()
-        {
-            if(!enabled)
-            {
-                return;
-            }
-
-            if(_collisionTriggerJssc.val != COLLISION_TRIGGER_DEFAULT_VAL)
-            {
-                CreateTrigger(_collisionTriggerJssc.val);
-                ClearOtherTriggers();
-            }
-        }
-
-        void CreateTrigger(string triggerName)
-        {
-            var collisionTrigger = containingAtom.GetStorableByID(triggerName) as CollisionTrigger;
-            if(!CheckIfTriggerExists(collisionTrigger))
-            {
-                if(collisionTrigger)
-                {
-                    collisionTrigger.enabled = true;
-                    var startTrigger = collisionTrigger.trigger.CreateDiscreteActionStartInternal();
-                    startTrigger.name = EXP_RAND_TRIGGER;
-                    startTrigger.receiverAtom = containingAtom;
-                    startTrigger.receiver = this;
-                    startTrigger.receiverTargetName = _manualTriggerAction.name;
-                }
-            }
-        }
-
-        void ClearOtherTriggers()
-        {
-            foreach(string triggerName in _collisionTriggerJssc.choices)
-            {
-                if(triggerName != _collisionTriggerJssc.val)
-                {
-                    ClearTriggers(triggerName);
-                }
-            }
-        }
-
-        void ClearTriggers(string triggerName)
-        {
-            if(triggerName == COLLISION_TRIGGER_DEFAULT_VAL)
-            {
-                return;
-            }
-
-            var collisionTrigger = containingAtom.GetStorableByID(triggerName) as CollisionTrigger;
-            if(collisionTrigger)
-            {
-                var triggerJSON = collisionTrigger.trigger.GetJSON();
-                var startActions = triggerJSON["startActions"].AsArray;
-                for(int i = 0; i < startActions.Count; i++)
-                {
-                    if(startActions[i]["name"].Value == EXP_RAND_TRIGGER)
-                    {
-                        startActions.Remove(i);
-                    }
-                }
-
-                Debug.Log("2");
-                collisionTrigger.trigger.RestoreFromJSON(triggerJSON);
-            }
-            else
-            {
-                Debug.Log("3");
-                Loggr.Message($"{nameof(ClearTriggers)} error: Couldn't find trigger " + triggerName);
-            }
-        }
 
         public override void Init()
         {
@@ -284,8 +207,9 @@ namespace extraltodeus
                 yield return null;
             }
 
-            containingAtom.GetStorableByID("AutoExpressions").SetBoolParamValue("enabled", false);
-            var geometry = (DAZCharacterSelector) containingAtom.GetStorableByID("geometry");
+            _person = containingAtom;
+            _person.GetStorableByID("AutoExpressions").SetBoolParamValue("enabled", false);
+            var geometry = (DAZCharacterSelector) _person.GetStorableByID("geometry");
             _morphsControlUI = geometry.morphsControlUI;
 
             foreach(var morph in _morphsControlUI.GetMorphs())
@@ -402,9 +326,80 @@ namespace extraltodeus
                 }
             }
 
+            InvokeRepeating(nameof(TriggerMaintainer), 3f, 3f); // To check if the selected collision trigger is still there every 3 seconds
             SuperController.singleton.onBeforeSceneSaveHandlers += OnBeforeSceneSave;
             SuperController.singleton.onSceneSavedHandlers += OnSceneSaved;
             initialized = true;
+        }
+
+        void TriggerMaintainer()
+        {
+            if(!enabled)
+            {
+                return;
+            }
+
+            if(_collisionTriggerJssc.val != COLLISION_TRIGGER_DEFAULT_VAL)
+            {
+                CreateTrigger(_collisionTriggerJssc.val);
+                ClearOtherTriggers();
+            }
+        }
+
+        void CreateTrigger(string triggerName)
+        {
+            var collisionTrigger = _person.GetStorableByID(triggerName) as CollisionTrigger;
+            if(!CheckIfTriggerExists(collisionTrigger))
+            {
+                if(collisionTrigger)
+                {
+                    collisionTrigger.enabled = true;
+                    var startTrigger = collisionTrigger.trigger.CreateDiscreteActionStartInternal();
+                    startTrigger.name = EXP_RAND_TRIGGER;
+                    startTrigger.receiverAtom = _person;
+                    startTrigger.receiver = this;
+                    startTrigger.receiverTargetName = _manualTriggerAction.name;
+                }
+            }
+        }
+
+        void ClearOtherTriggers()
+        {
+            foreach(string triggerName in _collisionTriggerJssc.choices)
+            {
+                if(triggerName != _collisionTriggerJssc.val)
+                {
+                    ClearTriggers(triggerName);
+                }
+            }
+        }
+
+        void ClearTriggers(string triggerName)
+        {
+            if(triggerName == COLLISION_TRIGGER_DEFAULT_VAL || _person == null || !_person.gameObject)
+            {
+                return;
+            }
+
+            var collisionTrigger = _person.GetStorableByID(triggerName) as CollisionTrigger;
+            if(collisionTrigger)
+            {
+                var triggerJSON = collisionTrigger.trigger.GetJSON();
+                var startActions = triggerJSON["startActions"].AsArray;
+                for(int i = 0; i < startActions.Count; i++)
+                {
+                    if(startActions[i]["name"].Value == EXP_RAND_TRIGGER)
+                    {
+                        startActions.Remove(i);
+                    }
+                }
+
+                collisionTrigger.trigger.RestoreFromJSON(triggerJSON);
+            }
+            else
+            {
+                Loggr.Message($"{nameof(ClearTriggers)} error: Couldn't find trigger " + triggerName);
+            }
         }
 
         UIDynamicButton _moreButton;
