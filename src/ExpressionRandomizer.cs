@@ -409,8 +409,6 @@ namespace extraltodeus
         UIDynamicButton _moreButton;
         UIDynamicSlider _loopLengthSlider;
         UIDynamicSlider _morphingSpeedSlider;
-        UIDynamicButton _setAsDefaultButton;
-        UIDynamicButton _resetButton;
         UIDynamicToggle _abaToggle;
 
         UIDynamicButton _backButton;
@@ -422,7 +420,53 @@ namespace extraltodeus
 
         void CreateLeftUI()
         {
-            CreateHeaderTextField($"ExpressionRandomizer v{VERSION}", 33);
+            CreateSpacer().height = 50f;
+
+            var selectIdlePresetButton = CreateCustomButton("Idle", new Vector2(10, -62), -912);
+            selectIdlePresetButton.button.onClick.AddListener(() =>
+            {
+                foreach(var morphModel in _morphModels)
+                {
+                    if(_manualJsb.val)
+                    {
+                        _multiJsf.val = 1;
+                        _masterSpeedJsf.val = 1;
+                    }
+
+                    morphModel.EnabledJsb.val = morphModel.DefaultOn;
+                }
+            });
+
+            var selectFlirtPresetButton = CreateCustomButton("Flirt", new Vector2(10 + 178, -62), -912);
+            selectFlirtPresetButton.button.onClick.AddListener(() =>
+            {
+                foreach(var morphModel in _morphModels)
+                {
+                    if(_manualJsb.val)
+                    {
+                        _multiJsf.val = 1.6f;
+                        _masterSpeedJsf.val = 3.0f;
+                    }
+
+                    morphModel.EnabledJsb.val = morphModel.Preset1On;
+                }
+            });
+
+            var selectEnjoyPresetButton = CreateCustomButton("Enjoy", new Vector2(10 + 178 * 2, -62), -912);
+            selectEnjoyPresetButton.button.onClick.AddListener(() =>
+            {
+                foreach(var morphModel in _morphModels)
+                {
+                    if(_manualJsb.val)
+                    {
+                        _multiJsf.val = 1.8f;
+                        _masterSpeedJsf.val = 4.2f;
+                    }
+
+                    morphModel.EnabledJsb.val = morphModel.Preset2On;
+                }
+            });
+
             CreateSlider(_minJsf);
             CreateSlider(_maxJsf);
             CreateSlider(_multiJsf);
@@ -442,30 +486,9 @@ namespace extraltodeus
             _moreButton.buttonColor = Color.gray;
             _moreButton.textColor = Color.white;
             _moreButton.button.onClick.AddListener(() => SelectOptionsUI(true));
-
-            CreateHeaderTextField("Additional Options", 30);
-
+            CreateHeaderTextField("Additional Options", 32);
             _loopLengthSlider = CreateSlider(_animWaitJsf);
             _morphingSpeedSlider = CreateSlider(_animLengthJsf);
-            _setAsDefaultButton = CreateButton("Set Current State As Default");
-            _setAsDefaultButton.button.onClick.AddListener(() =>
-            {
-                foreach(var morphModel in _morphModels)
-                {
-                    morphModel.UpdateDefaultValue();
-                }
-            });
-
-            _resetButton = CreateButton("Reset To Default/Load State");
-            _resetButton.button.onClick.AddListener(() =>
-            {
-                _playJsb.val = false;
-                foreach(var morphModel in _morphModels)
-                {
-                    morphModel.ResetToDefault();
-                }
-            });
-
             _abaToggle = CreateToggle(_abaJsb);
         }
 
@@ -505,8 +528,6 @@ namespace extraltodeus
         {
             _loopLengthSlider.SetVisible(!alt);
             _morphingSpeedSlider.SetVisible(!alt);
-            _setAsDefaultButton.SetVisible(!alt);
-            _resetButton.SetVisible(!alt);
             _abaToggle.SetVisible(!alt);
             _moreButton.SetVisible(!alt);
 
@@ -527,10 +548,11 @@ namespace extraltodeus
 
         void CreateRightUI()
         {
-            CreateSpacer(true).height = 120f;
+            CreateHeaderTextField("Morphs", 32, true);
 
-            var selectNone = CreateSmallButton("Select None", 550, -62);
-            selectNone.button.onClick.AddListener(() =>
+            var selectNoneButton = CreateCustomButton("Select none", new Vector2(717, -65), -920, true);
+            selectNoneButton.buttonText.fontSize = 26;
+            selectNoneButton.button.onClick.AddListener(() =>
             {
                 foreach(var morphModel in _morphModels)
                 {
@@ -538,55 +560,11 @@ namespace extraltodeus
                 }
             });
 
-            var selectDefault = CreateSmallButton("Select Default", 820, -62);
-            selectDefault.button.onClick.AddListener(() =>
-            {
-                foreach(var morphModel in _morphModels)
-                {
-                    if(_manualJsb.val)
-                    {
-                        _multiJsf.val = 1;
-                        _masterSpeedJsf.val = 1;
-                    }
-
-                    morphModel.EnabledJsb.val = morphModel.DefaultOn;
-                }
-            });
-
-            var selectPreset1 = CreateSmallButton("Select Preset 1", 550, -132);
-            selectPreset1.button.onClick.AddListener(() =>
-            {
-                foreach(var morphModel in _morphModels)
-                {
-                    if(_manualJsb.val)
-                    {
-                        _multiJsf.val = 1.6f;
-                        _masterSpeedJsf.val = 3.0f;
-                    }
-
-                    morphModel.EnabledJsb.val = morphModel.Preset1On;
-                }
-            });
-
-            var selectPreset2 = CreateSmallButton("Select Preset 2", 820, -132);
-            selectPreset2.button.onClick.AddListener(() =>
-            {
-                foreach(var morphModel in _morphModels)
-                {
-                    if(_manualJsb.val)
-                    {
-                        _multiJsf.val = 1.8f;
-                        _masterSpeedJsf.val = 4.2f;
-                    }
-
-                    morphModel.EnabledJsb.val = morphModel.Preset2On;
-                }
-            });
-
-            var zeroMorphButton = CreateSmallButton("Zero selected", 820, -198);
-            zeroMorphButton.buttonColor = Colors.rustRed;
-            zeroMorphButton.textColor = Color.white;
-            zeroMorphButton.button.onClick.AddListener(() =>
+            var zeroSelectedButton = CreateCustomButton("Zero selected", new Vector2(890, -65), -900);
+            zeroSelectedButton.buttonText.fontSize = 26;
+            zeroSelectedButton.buttonColor = Colors.rustRed;
+            zeroSelectedButton.textColor = Color.white;
+            zeroSelectedButton.button.onClick.AddListener(() =>
             {
                 _playJsb.val = false;
                 foreach(var morphModel in _morphModels)
@@ -594,16 +572,14 @@ namespace extraltodeus
                     if(morphModel.EnabledJsb.val)
                     {
                         morphModel.ZeroValue();
+                        morphModel.UpdateInitialValue();
                     }
                 }
             });
 
-            CreateHeaderTextField("Morphs", 30, true);
-
             _regionPopup = CreateRegionPopup();
             CreateSmallToggle(_useAndFilterJsb, 10, -392, true);
             CreateSmallToggle(_onlyShowActiveJsb, 280, -392, true);
-            CreateSpacer(true).height = 48;
 
             _filterInputField = CreateFilterInputField();
             _filterInputField.onValueChanged.AddListener(value =>
@@ -712,12 +688,17 @@ namespace extraltodeus
             return toggle;
         }
 
-        UIDynamicButton CreateSmallButton(string label, int x, int y)
+        UIDynamicButton CreateCustomButton(string label, Vector2 pos, int sizeX, bool callbacks = false)
         {
             var t = InstantiateToContent(manager.configurableButtonPrefab);
             var rectTransform = GetRekt(t);
-            rectTransform.anchoredPosition = new Vector2(x, y);
-            rectTransform.sizeDelta = new Vector2(-825, 52);
+            rectTransform.anchoredPosition = pos;
+            rectTransform.sizeDelta = new Vector2(sizeX, 52);
+            if(callbacks)
+            {
+                SetDevUISliderCallbacks(rectTransform);
+            }
+
             var button = t.GetComponent<UIDynamicButton>();
             button.label = label;
             return button;
@@ -825,8 +806,8 @@ namespace extraltodeus
         {
             var t = InstantiateToContent(manager.configurableButtonPrefab);
             var rectTransform = GetRekt(t);
-            rectTransform.anchoredPosition = new Vector2(965, -470);
-            rectTransform.sizeDelta = new Vector2(-970, 63);
+            rectTransform.anchoredPosition = new Vector2(973, -259);
+            rectTransform.sizeDelta = new Vector2(-980, 48);
             var button = t.GetComponent<UIDynamicButton>();
             button.label = "Clear";
             button.buttonColor = Colors.rustRed;
@@ -839,8 +820,8 @@ namespace extraltodeus
             var filterTextJss = new JSONStorableString("FilterText", FILTER_DEFAULT_VAL);
             var filterTextField = CreateTextField(filterTextJss, true);
             var tfLayout = filterTextField.GetComponent<LayoutElement>();
-            tfLayout.preferredHeight = tfLayout.minHeight = 63;
-            filterTextField.height = 63;
+            tfLayout.preferredHeight = tfLayout.minHeight = 50;
+            filterTextField.height = 50;
             filterTextField.DisableScrollOnText();
             _filterInputField = filterTextField.gameObject.AddComponent<InputField>();
             _filterInputField.textComponent = filterTextField.UItext;

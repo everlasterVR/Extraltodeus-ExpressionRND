@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System.Diagnostics.CodeAnalysis;
+using UnityEngine;
 
 namespace ExpressionRND.Models
 {
@@ -7,7 +8,10 @@ namespace ExpressionRND.Models
         readonly DAZMorph _morph;
         public string DisplayName { get; }
         public string FinalTwoRegions { get; }
+
+        [SuppressMessage("ReSharper", "MemberCanBePrivate.Global")]
         public string FinalRegion { get; }
+
         public string Label { get; }
         public bool DefaultOn { get; set; }
         public bool Preset1On { get; set; }
@@ -15,7 +19,6 @@ namespace ExpressionRND.Models
         public JSONStorableBool EnabledJsb { get; set; }
 
         float _initialMorphValue;
-        float _defaultMorphValue;
         float _currentMorphValue;
         float _newMorphValue;
 
@@ -32,7 +35,6 @@ namespace ExpressionRND.Models
 
             Label = FinalRegion + "/" + DisplayName;
             _initialMorphValue = _morph.morphValue;
-            _defaultMorphValue = _initialMorphValue;
             _currentMorphValue = _morph.morphValue;
         }
 
@@ -47,16 +49,6 @@ namespace ExpressionRND.Models
             _newMorphValue = aba && _currentMorphValue > 0.1f
                 ? 0
                 : Random.Range(min, max) * multi;
-        }
-
-        public void UpdateDefaultValue()
-        {
-            _defaultMorphValue = _morph.morphValue;
-        }
-
-        public void ResetToDefault()
-        {
-            _morph.morphValue = _defaultMorphValue;
         }
 
         public void UpdateInitialValue()
