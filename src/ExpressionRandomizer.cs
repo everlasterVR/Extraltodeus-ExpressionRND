@@ -314,7 +314,11 @@ namespace extraltodeus
                 {
                     if(!on)
                     {
-                        morphModel.ZeroValue();
+                        morphModel.ResetToInitial();
+                    }
+                    else
+                    {
+                        morphModel.UpdateInitialValue();
                     }
 
                     _enabledMorphs.Clear();
@@ -643,11 +647,7 @@ namespace extraltodeus
             });
             _regionPopupListener.onDisable.AddListener(() => clearButton.SetVisible(true));
 
-            /* Dev sliders for aligning custom elements */
-            // CreateSlider(_posX, true);
-            // CreateSlider(_posY, true);
-            // CreateSlider(_sizeX, true);
-            // CreateSlider(_sizeY, true);
+            // CreateDevSliders();
 
             for(int i = 0; i < 10; i++)
             {
@@ -1093,11 +1093,14 @@ namespace extraltodeus
             return false;
         }
 
-        void ResetMorphs()
+        void ResetActiveMorphs()
         {
             foreach(var morphModel in _morphModels)
             {
-                morphModel.ResetToInitial();
+                if(morphModel.EnabledJsb.val)
+                {
+                    morphModel.ResetToInitial();
+                }
             }
         }
 
@@ -1149,7 +1152,7 @@ namespace extraltodeus
         void OnBeforeSceneSave()
         {
             _savingScene = true;
-            ResetMorphs();
+            ResetActiveMorphs();
         }
 
         static void OnSceneSaved()
@@ -1166,7 +1169,7 @@ namespace extraltodeus
 
             try
             {
-                ResetMorphs();
+                ResetActiveMorphs();
             }
             catch(Exception e)
             {
@@ -1193,10 +1196,25 @@ namespace extraltodeus
 
         #if ENV_DEVELOPMENT
 
-        readonly JSONStorableFloat _posX = new JSONStorableFloat("posX", 0, -3000, 3000);
-        readonly JSONStorableFloat _posY = new JSONStorableFloat("posY", 0, -3000, 3000);
-        readonly JSONStorableFloat _sizeX = new JSONStorableFloat("sizeX", 0, -2000, 2000);
-        readonly JSONStorableFloat _sizeY = new JSONStorableFloat("sizeY", 0, -2000, 2000);
+        readonly JSONStorableFloat _posX = new JSONStorableFloat("posX", 0, 0, 1000);
+        readonly JSONStorableFloat _posY = new JSONStorableFloat("posY", 0, -1000, 1000);
+        readonly JSONStorableFloat _sizeX = new JSONStorableFloat("sizeX", 0, -1000, 1000);
+        readonly JSONStorableFloat _sizeY = new JSONStorableFloat("sizeY", 0, -1000, 1000);
+
+        void CreateDevSliders()
+        {
+            _morphModels.Clear();
+            /* Dev sliders for aligning custom elements */
+            var posXSlider = CreateSlider(_posX, true);
+            var posYSlider = CreateSlider(_posY, true);
+            var sizeXSlider = CreateSlider(_sizeX, true);
+            var sizeYSlider = CreateSlider(_sizeY, true);
+
+            posXSlider.valueFormat = "F0";
+            posYSlider.valueFormat = "F0";
+            sizeXSlider.valueFormat = "F0";
+            sizeYSlider.valueFormat = "F0";
+        }
 
         void SetDevUISliderCallbacks(RectTransform rectTransform)
         {

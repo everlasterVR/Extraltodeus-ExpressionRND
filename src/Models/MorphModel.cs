@@ -14,7 +14,7 @@ namespace ExpressionRND.Models
         public bool Preset2On { get; set; }
         public JSONStorableBool EnabledJsb { get; set; }
 
-        readonly float _initialMorphValue;
+        float _initialMorphValue;
         float _defaultMorphValue;
         float _currentMorphValue;
         float _newMorphValue;
@@ -33,7 +33,6 @@ namespace ExpressionRND.Models
             Label = FinalRegion + "/" + DisplayName;
             _initialMorphValue = _morph.morphValue;
             _defaultMorphValue = _initialMorphValue;
-            _morph.morphValue = 0;
             _currentMorphValue = _morph.morphValue;
         }
 
@@ -58,6 +57,11 @@ namespace ExpressionRND.Models
         public void ResetToDefault()
         {
             _morph.morphValue = _defaultMorphValue;
+        }
+
+        public void UpdateInitialValue()
+        {
+            _initialMorphValue = _morph.morphValue;
         }
 
         public void ResetToInitial()
