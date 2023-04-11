@@ -207,7 +207,7 @@ namespace extraltodeus
         {
             foreach(string triggerName in _collisionTriggerJssc.choices)
             {
-                if(triggerName != _collisionTriggerJssc.val && triggerName != COLLISION_TRIGGER_DEFAULT_VAL)
+                if(triggerName != _collisionTriggerJssc.val)
                 {
                     ClearTriggers(triggerName);
                 }
@@ -216,6 +216,11 @@ namespace extraltodeus
 
         void ClearTriggers(string triggerName)
         {
+            if(triggerName == COLLISION_TRIGGER_DEFAULT_VAL)
+            {
+                return;
+            }
+
             var collisionTrigger = containingAtom.GetStorableByID(triggerName) as CollisionTrigger;
             if(collisionTrigger)
             {
@@ -1171,6 +1176,8 @@ namespace extraltodeus
             {
                 base.OnDestroy();
                 Destroy(_colliderTriggerPopupListener);
+                ClearTriggers(_collisionTriggerJssc.val);
+                ClearOtherTriggers();
                 SuperController.singleton.onSceneSavedHandlers -= OnSceneSaved;
                 SuperController.singleton.onBeforeSceneSaveHandlers -= OnBeforeSceneSave;
             }
