@@ -464,6 +464,8 @@ namespace extraltodeus
 
                     morphModel.EnabledJsb.val = morphModel.DefaultOn;
                 }
+
+                _playJsb.val = true;
             });
             _flirtPresetButton.button.onClick.AddListener(() =>
             {
@@ -478,6 +480,8 @@ namespace extraltodeus
 
                     morphModel.EnabledJsb.val = morphModel.FlirtOn;
                 }
+
+                _playJsb.val = true;
             });
             _enjoyPresetButton.button.onClick.AddListener(() =>
             {
@@ -492,6 +496,8 @@ namespace extraltodeus
 
                     morphModel.EnabledJsb.val = morphModel.EnjoyOn;
                 }
+
+                _playJsb.val = true;
             });
 
             // TODO what if this preset actually active in JSON?
@@ -552,6 +558,7 @@ namespace extraltodeus
             if(_isSavingPreset)
             {
                 _customPresetJSONs[index] = GetJSON();
+                _isSavingPreset = false;
             }
             else if(_isLoadingPreset)
             {
@@ -565,6 +572,8 @@ namespace extraltodeus
                     RestoreFromJSON(presetJSON);
                     SetBuiltInPresetSelected(null);
                 }
+
+                _isLoadingPreset = false;
             }
         }
 
@@ -601,7 +610,7 @@ namespace extraltodeus
             _loadButton.SetActiveStyle(false, true);
 
             float timeout = Time.unscaledTime + 5;
-            while(Time.unscaledTime < timeout)
+            while(Time.unscaledTime < timeout && _isSavingPreset)
             {
                 yield return null;
             }
@@ -622,7 +631,7 @@ namespace extraltodeus
             _saveButton.SetActiveStyle(false, true);
 
             float timeout = Time.unscaledTime + 5;
-            while(Time.unscaledTime < timeout)
+            while(Time.unscaledTime < timeout && _isLoadingPreset)
             {
                 yield return null;
             }
