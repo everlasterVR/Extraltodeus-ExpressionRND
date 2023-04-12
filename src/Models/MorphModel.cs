@@ -13,9 +13,6 @@ namespace ExpressionRND.Models
         public string FinalRegion { get; }
 
         public string Label { get; }
-        public bool DefaultOn { get; set; }
-        public bool FlirtOn { get; set; }
-        public bool EnjoyOn { get; set; }
         public JSONStorableBool EnabledJsb { get; set; }
 
         float _initialMorphValue;

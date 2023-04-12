@@ -14,6 +14,12 @@ namespace extraltodeus
     sealed class ExpressionRandomizer : ScriptBase
     {
         const string VERSION = "0.0.0";
+        const string IDLE = "Idle";
+        const string FLIRT = "Flirt";
+        const string ENJOY = "Enjoy";
+        const string EXP_RAND_TRIGGER = "ExpRandTrigger";
+        const string COLLISION_TRIGGER_DEFAULT_VAL = "None";
+        const string FILTER_DEFAULT_VAL = "Filter morphs...";
 
         public override bool ShouldIgnore()
         {
@@ -93,55 +99,110 @@ namespace extraltodeus
             "Eye Roll Back_DD",
         };
 
-        // TODO convert flirt preset
-        readonly string[] _defaultOn =
+        [SuppressMessage("ReSharper", "InconsistentNaming")]
+        readonly Dictionary<string, JSONClass> _builtInPresetJSONs = new Dictionary<string, JSONClass>
         {
-            "Brow Outer Up Left",
-            "Brow Outer Up Right",
-            "Brow Inner Up Left",
-            "Brow Inner Up Right",
-            "Concentrate",
-            "Desire",
-            "Flirting",
-            "Pupils Dialate", //sic
-            "Snarl Left",
-            "Snarl Right",
-            "Eyes Squint Left",
-            "Eyes Squint Right",
-            "Lips Pucker",
+            {
+                IDLE,
+                new JSONClass
+                {
+                    /* Settings */
+                    ["Play"] = { AsBool = true },
+                    ["Smooth"] = { AsBool = true },
+                    ["Reset used expressions at loop"] = { AsBool = true },
+                    ["Trigger transitions manually"] = { AsBool = false },
+                    ["Random chances for transitions"] = { AsBool = false },
+                    ["Minimum value"] = { AsFloat = -0.15f },
+                    ["Maximum value"] = { AsFloat = 0.35f },
+                    ["Multiplier"] = { AsFloat = 1f },
+                    ["Master speed"] = { AsFloat = 1f },
+                    ["Loop length"] = { AsFloat = 2f },
+                    ["Morphing speed"] = { AsFloat = 1f },
+                    ["Chance to trigger"] = { AsFloat = 75f },
+                    ["Collision trigger"] = "None",
+                    /* Enabled morphs */
+                    ["Brow/Brow Inner Up Left"] = { AsBool = true },
+                    ["Brow/Brow Inner Up Right"] = { AsBool = true },
+                    ["Brow/Brow Outer Up Left"] = { AsBool = true },
+                    ["Brow/Brow Outer Up Right"] = { AsBool = true },
+                    ["Eyes/Eyes Squint Left"] = { AsBool = true },
+                    ["Eyes/Eyes Squint Right"] = { AsBool = true },
+                    ["Eyes/Pupils Dialate"] = { AsBool = true },
+                    ["Expressions/Concentrate"] = { AsBool = true },
+                    ["Expressions/Desire"] = { AsBool = true },
+                    ["Expressions/Flirting"] = { AsBool = true },
+                    ["Expressions/Snarl Left"] = { AsBool = true },
+                    ["Expressions/Snarl Right"] = { AsBool = true },
+                    ["Lips/Lips Pucker"] = { AsBool = true },
+                }
+            },
+            {
+                FLIRT,
+                new JSONClass
+                {
+                    /* Settings */
+                    ["Play"] = { AsBool = true },
+                    ["Smooth"] = { AsBool = true },
+                    ["Reset used expressions at loop"] = { AsBool = true },
+                    ["Trigger transitions manually"] = { AsBool = false },
+                    ["Random chances for transitions"] = { AsBool = false },
+                    ["Minimum value"] = { AsFloat = -0.15f },
+                    ["Maximum value"] = { AsFloat = 0.35f },
+                    ["Multiplier"] = { AsFloat = 1.6f },
+                    ["Master speed"] = { AsFloat = 3f },
+                    ["Loop length"] = { AsFloat = 2f },
+                    ["Morphing speed"] = { AsFloat = 1f },
+                    ["Chance to trigger"] = { AsFloat = 75f },
+                    ["Collision trigger"] = "None",
+                    /* Enabled morphs */
+                    ["Brow/Brow Inner Up Left"] = { AsBool = true },
+                    ["Brow/Brow Inner Up Right"] = { AsBool = true },
+                    ["Eyes/Eyes Squint Left"] = { AsBool = true },
+                    ["Eyes/Eyes Squint Right"] = { AsBool = true },
+                    ["Eyes/Pupils Dialate"] = { AsBool = true },
+                    ["Expressions/Concentrate"] = { AsBool = true },
+                    ["Expressions/Confused"] = { AsBool = true },
+                    ["Expressions/Pain"] = { AsBool = true },
+                    ["Expressions/Surprise"] = { AsBool = true },
+                    ["Expressions_Reloaded-Lite/01-Extreme Pleasure"] = { AsBool = true },
+                    ["Mouth/Mouth Smile Simple"] = { AsBool = true },
+                }
+            },
+            {
+                ENJOY,
+                new JSONClass
+                {
+                    /* Settings */
+                    ["Play"] = { AsBool = true },
+                    ["Smooth"] = { AsBool = true },
+                    ["Reset used expressions at loop"] = { AsBool = true },
+                    ["Trigger transitions manually"] = { AsBool = false },
+                    ["Random chances for transitions"] = { AsBool = false },
+                    ["Minimum value"] = { AsFloat = -0.15f },
+                    ["Maximum value"] = { AsFloat = 0.35f },
+                    ["Multiplier"] = { AsFloat = 1.8f },
+                    ["Master speed"] = { AsFloat = 4.3f },
+                    ["Loop length"] = { AsFloat = 2f },
+                    ["Morphing speed"] = { AsFloat = 1f },
+                    ["Chance to trigger"] = { AsFloat = 75f },
+                    ["Collision trigger"] = "None",
+                    /* Enabled morphs */
+                    ["Brow/Brow Inner Up Left"] = { AsBool = true },
+                    ["Brow/Brow Inner Up Right"] = { AsBool = true },
+                    ["Brow/Brow Outer Down Left"] = { AsBool = true },
+                    ["Brow/Brow Outer Down Right"] = { AsBool = true },
+                    ["Brow/Brow Squeeze"] = { AsBool = true },
+                    ["Eyes/Eyes Closed"] = { AsBool = true },
+                    ["Eyes/Eyes Squint Left"] = { AsBool = true },
+                    ["Eyes/Eyes Squint Right"] = { AsBool = true },
+                }
+            },
         };
 
+        [SuppressMessage("ReSharper", "InconsistentNaming")]
         readonly JSONClass[] _customPresetJSONs = { null, null };
 
-        // TODO convert enjoy preset
-        readonly string[] _flirtOn =
-        {
-            "Brow Inner Up Left",
-            "Brow Inner Up Right",
-            "01-Extreme Pleasure",
-            "Concentrate",
-            "Confused",
-            "Pain",
-            "Eyes Squint Left",
-            "Eyes Squint Right",
-            "Surprise",
-            "Mouth Smile Simple",
-            "Pupils Dialate",
-        };
-
-        // TODO convert to idle preset
-        readonly string[] _enjoyOn =
-        {
-            "Brow Inner Up Left",
-            "Brow Inner Up Right",
-            "Brow Outer Down Left",
-            "Brow Outer Down Right",
-            "Brow Squeeze",
-            "Eyes Closed",
-            "Eyes Squint Left",
-            "Eyes Squint Right",
-        };
-
+        bool _idlePresetSetOnInit;
         bool _restoringFromJson;
         Atom _person;
         GenerateDAZMorphsControlUI _morphsControlUI;
@@ -170,10 +231,6 @@ namespace extraltodeus
         InputField _filterInputField;
         UnityEventsListener _colliderTriggerPopupListener;
         UnityEventsListener _regionPopupListener;
-
-        const string EXP_RAND_TRIGGER = "ExpRandTrigger";
-        const string COLLISION_TRIGGER_DEFAULT_VAL = "None";
-        const string FILTER_DEFAULT_VAL = "Filter morphs...";
 
         public override void Init()
         {
@@ -220,6 +277,8 @@ namespace extraltodeus
             var geometry = (DAZCharacterSelector) _person.GetStorableByID("geometry");
             _morphsControlUI = geometry.morphsControlUI;
 
+            // TODO ignore morphs that control other morphs
+            //          if such morph is set enabled, its controller morph should be zeroed
             foreach(var morph in _morphsControlUI.GetMorphs())
             {
                 if(
@@ -228,12 +287,7 @@ namespace extraltodeus
                     _tailorList.Any(morph.displayName.Contains)
                 )
                 {
-                    var morphModel = new MorphModel(morph, morph.displayName, morph.region)
-                    {
-                        DefaultOn = _defaultOn.Any(morph.displayName.Equals),
-                        FlirtOn = _flirtOn.Any(morph.displayName.Equals),
-                        EnjoyOn = _enjoyOn.Any(morph.displayName.Equals),
-                    };
+                    var morphModel = new MorphModel(morph, morph.displayName, morph.region);
                     _morphModels.Add(morphModel);
                 }
             }
@@ -317,7 +371,7 @@ namespace extraltodeus
             _enabledMorphs = new List<MorphModel>();
             foreach(var morphModel in _morphModels)
             {
-                morphModel.EnabledJsb = NewStorableBool(morphModel.Label, morphModel.DefaultOn);
+                morphModel.EnabledJsb = NewStorableBool(morphModel.Label, false);
                 morphModel.EnabledJsb.setCallbackFunction = on =>
                 {
                     if(!on)
@@ -336,6 +390,13 @@ namespace extraltodeus
                 {
                     _enabledMorphs.Add(morphModel);
                 }
+            }
+
+            if(!_restoringFromJson)
+            {
+                // TODO what if this preset actually active in JSON?
+                _idlePresetSetOnInit = true;
+                base.RestoreFromJSON(_builtInPresetJSONs[IDLE]);
             }
 
             InvokeRepeating(nameof(TriggerMaintainer), 3f, 3f); // To check if the selected collision trigger is still there every 3 seconds
@@ -442,66 +503,32 @@ namespace extraltodeus
         {
             CreateSpacer().height = 106f;
 
-            _idlePresetButton = CreateCustomButton("Idle", new Vector2(10, -62), new Vector2(-910, 52));
+            _idlePresetButton = CreateCustomButton(IDLE, new Vector2(10, -62), new Vector2(-910, 52));
             _idlePresetButton.buttonColor = new Color(0.66f, 0.77f, 0.88f);
 
-            _flirtPresetButton = CreateCustomButton("Flirt", new Vector2(10 + 175, -62), new Vector2(-910, 52));
+            _flirtPresetButton = CreateCustomButton(FLIRT, new Vector2(10 + 175, -62), new Vector2(-910, 52));
             _flirtPresetButton.buttonColor = new Color(0.88f, 0.77f, 0.66f);
 
-            _enjoyPresetButton = CreateCustomButton("Enjoy", new Vector2(10 + 175 * 2, -62), new Vector2(-910, 52));
+            _enjoyPresetButton = CreateCustomButton(ENJOY, new Vector2(10 + 175 * 2, -62), new Vector2(-910, 52));
             _enjoyPresetButton.buttonColor = new Color(0.88f, 0.66f, 0.77f);
 
             _idlePresetButton.button.onClick.AddListener(() =>
             {
+                base.RestoreFromJSON(_builtInPresetJSONs[IDLE]);
                 SetBuiltInPresetSelected(_idlePresetButton);
-                foreach(var morphModel in _morphModels)
-                {
-                    if(_manualJsb.val)
-                    {
-                        _multiJsf.val = 1;
-                        _masterSpeedJsf.val = 1;
-                    }
-
-                    morphModel.EnabledJsb.val = morphModel.DefaultOn;
-                }
-
-                _playJsb.val = true;
             });
             _flirtPresetButton.button.onClick.AddListener(() =>
             {
+                base.RestoreFromJSON(_builtInPresetJSONs[FLIRT]);
                 SetBuiltInPresetSelected(_flirtPresetButton);
-                foreach(var morphModel in _morphModels)
-                {
-                    if(_manualJsb.val)
-                    {
-                        _multiJsf.val = 1.6f;
-                        _masterSpeedJsf.val = 3.0f;
-                    }
-
-                    morphModel.EnabledJsb.val = morphModel.FlirtOn;
-                }
-
-                _playJsb.val = true;
             });
             _enjoyPresetButton.button.onClick.AddListener(() =>
             {
+                base.RestoreFromJSON(_builtInPresetJSONs[ENJOY]);
                 SetBuiltInPresetSelected(_enjoyPresetButton);
-                foreach(var morphModel in _morphModels)
-                {
-                    if(_manualJsb.val)
-                    {
-                        _multiJsf.val = 1.8f;
-                        _masterSpeedJsf.val = 4.2f;
-                    }
-
-                    morphModel.EnabledJsb.val = morphModel.EnjoyOn;
-                }
-
-                _playJsb.val = true;
             });
 
-            // TODO what if this preset actually active in JSON?
-            if(!_restoringFromJson)
+            if(_idlePresetSetOnInit)
             {
                 SetBuiltInPresetSelected(_idlePresetButton);
             }
@@ -530,6 +557,7 @@ namespace extraltodeus
                 }
                 else if(_isLoadingPreset)
                 {
+                    // TODO test loading works on different plugin instance
                     // TODO file browser
                 }
             });
@@ -569,7 +597,7 @@ namespace extraltodeus
                 }
                 else
                 {
-                    RestoreFromJSON(presetJSON);
+                    base.RestoreFromJSON(presetJSON);
                     SetBuiltInPresetSelected(null);
                 }
 

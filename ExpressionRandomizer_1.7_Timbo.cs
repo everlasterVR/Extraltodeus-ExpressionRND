@@ -80,6 +80,9 @@ namespace extraltodeuslExpRandPlugin
              * 5. Remove this legacy plugin from the atom
              */
 
+            //TODO if default preset morphs not false, set them true
+            //TODO ensure Init doesn't select Idle preset automatically
+
             string tmpPresetName = $"tmp_{Guid.NewGuid().ToString().Substring(0, 7)}";
             string uid = jc["id"].Value.Split('_').First(); // e.g. plugin#0
             string savePath = $"Custom/Atom/Person/Plugins/Preset_{tmpPresetName}.vap";
