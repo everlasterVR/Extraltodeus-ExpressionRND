@@ -34,7 +34,6 @@ namespace extraltodeus
     sealed class ExpressionRandomizer : ScriptBase
     {
         const string VERSION = "0.0.0";
-
         const string EXP_RAND_TRIGGER = "ExpRandTrigger";
         const string COLLISION_TRIGGER_DEFAULT_VAL = "None";
         const string FILTER_DEFAULT_VAL = "Filter morphs...";
@@ -521,7 +520,7 @@ namespace extraltodeus
         UIDynamicToggle _abaToggle;
 
         UIDynamicButton _backButton;
-        UIDynamicToggle _manualToggle;
+        UIDynamicToggle _triggerTransitionsManuallyToggle;
         UIDynamicToggle _randomToggle;
         UIDynamicSlider _triggerChanceSlider;
         UIDynamicButton _triggerTransitionButton;
@@ -602,10 +601,12 @@ namespace extraltodeus
             toggle.toggle.onValueChanged.AddListener(val => toggle.textColor = val ? Color.black : Colors.darkRed);
             CreateCustomToggle(_smoothJsb, new Vector2(280, -721), -285);
 
-            _triggerTransitionButton = CreateCustomButton("Trigger transition now", new Vector2(10, -778), new Vector2(-555, 47));
-            _triggerTransitionButton.buttonText.fontSize = 26;
+            _triggerTransitionButton = CreateCustomButton("Trigger transition", new Vector2(279, -786), new Vector2(-824, 52));
             _manualTriggerAction.RegisterButton(_triggerTransitionButton);
+            _triggerTransitionsManuallyToggle = CreateCustomToggle(_manualJsb, new Vector2(10, -786), -285, false);
+            _triggerTransitionsManuallyToggle.label = "Manual mode";
 
+            CreateSpacer().height = 63;
             CreateAdditionalOptionsUI();
             CreateMoreAdditionalOptionsUI();
             SelectOptionsUI(false);
@@ -703,20 +704,12 @@ namespace extraltodeus
 
         void CreateAdditionalOptionsUI()
         {
-            _moreButton = CreateCustomButton("More >", new Vector2(339, -837), new Vector2(-885, 52));
+            _moreButton = CreateCustomButton("Randomness, Collision trigger >", new Vector2(129, -863), new Vector2(-675, 52));
             _moreButton.buttonColor = Color.gray;
             _moreButton.textColor = Color.white;
             _moreButton.button.onClick.AddListener(() => SelectOptionsUI(true));
-            {
-                var jss = new JSONStorableString("Additional Options", "Additional Options");
-                var textField = CreateTextField(jss);
-                textField.UItext.fontSize = 30;
-                textField.backgroundColor = Color.clear;
-                textField.text = jss.val;
-                var layout = textField.GetComponent<LayoutElement>();
-                layout.preferredHeight = 38;
-                layout.minHeight = 38;
-            }
+            _moreButton.buttonText.fontSize = 26;
+
             _loopLengthSlider = CreateSlider(_animWaitJsf);
             _morphingSpeedSlider = CreateSlider(_animLengthJsf);
             _abaToggle = CreateToggle(_abaJsb);
@@ -724,12 +717,12 @@ namespace extraltodeus
 
         void CreateMoreAdditionalOptionsUI()
         {
-            _backButton = CreateCustomButton("< Back", new Vector2(339, -837), new Vector2(-885, 52));
+            _backButton = CreateCustomButton("< Back", new Vector2(404, -863), new Vector2(-950, 52));
             _backButton.buttonColor = Color.gray;
             _backButton.textColor = Color.white;
             _backButton.button.onClick.AddListener(() => SelectOptionsUI(false));
+            _moreButton.buttonText.fontSize = 26;
 
-            _manualToggle = CreateToggle(_manualJsb);
             _randomToggle = CreateToggle(_randomJsb);
             _triggerChanceSlider = CreateSlider(_triggerChanceJsf);
 
@@ -742,12 +735,17 @@ namespace extraltodeus
             _colliderTriggerPopupListener.onEnable.AddListener(() =>
             {
                 _backButton.SetVisible(false);
+                _triggerTransitionButton.SetVisible(false);
                 if(_regionPopup)
                 {
                     _regionPopup.popup.visible = false;
                 }
             });
-            _colliderTriggerPopupListener.onDisable.AddListener(() => _backButton.SetVisible(true));
+            _colliderTriggerPopupListener.onDisable.AddListener(() =>
+            {
+                _backButton.SetVisible(true);
+                _triggerTransitionButton.SetVisible(true);
+            });
         }
 
         void SelectOptionsUI(bool alt)
@@ -757,7 +755,6 @@ namespace extraltodeus
             _abaToggle.SetVisible(!alt);
             _moreButton.SetVisible(!alt);
 
-            _manualToggle.SetVisible(alt);
             _randomToggle.SetVisible(alt);
             _triggerChanceSlider.SetVisible(alt);
             _collisionTriggerPopup.SetVisible(alt);
