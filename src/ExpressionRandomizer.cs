@@ -329,7 +329,7 @@ namespace extraltodeus
             _play = _playJsb.val;
             _smoothJsb = NewStorableBool(Name.SMOOTH, true);
             _animWaitJsf = NewStorableFloat(Name.LOOP_LENGTH, 2f, 0.1f, 20f);
-            _animLengthJsf = NewStorableFloat(Name.MORPHING_SPEED, 1.0f, 0.1f, 10f);
+            _animLengthJsf = NewStorableFloat(Name.MORPHING_SPEED, 1.0f, 0.1f, 20f);
             _abaJsb = NewStorableBool(Name.RESET_USED_EXPRESSIONS_AT_LOOP, true);
             _manualJsb = NewStorableBool(Name.TRIGGER_TRANSITIONS_MANUALLY, false, false);
             _randomJsb = NewStorableBool(Name.RANDOM_CHANCES_FOR_TRANSITIONS, true, false);
