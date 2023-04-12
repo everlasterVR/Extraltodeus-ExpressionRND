@@ -583,12 +583,11 @@ namespace extraltodeus
             {
                 if(_isSavingPreset)
                 {
-                    // TODO file browser
+                    FileUtils.OpenSavePresetDialog(OnSavePathSelected);
                 }
                 else if(_isLoadingPreset)
                 {
-                    // TODO test loading works on different plugin instance
-                    // TODO file browser
+                    FileUtils.OpenLoadPresetDialog(OnLoadPathSelected);
                 }
             });
 
@@ -610,6 +609,48 @@ namespace extraltodeus
             CreateAdditionalOptionsUI();
             CreateMoreAdditionalOptionsUI();
             SelectOptionsUI(false);
+        }
+
+        void OnLoadPathSelected(string path)
+        {
+            // TODO test loading works on different plugin instance
+            OnPathSelected(path, () =>
+            {
+                var presetJSON = LoadJSON(path).AsObject;
+                if(presetJSON != null)
+                {
+                    base.RestoreFromJSON(presetJSON);
+                }
+            });
+        }
+
+        void OnSavePathSelected(string path)
+        {
+            OnPathSelected(path, () =>
+            {
+                if(!path.ToLower().EndsWith(FileUtils.PRESET_EXT.ToLower()))
+                {
+                    path += "." + FileUtils.PRESET_EXT;
+                }
+
+                SaveJSON(GetJSON(), path);
+                SuperController.singleton.DoSaveScreenshot(path);
+            });
+        }
+
+        void OnPathSelected(string path, Action saveOrLoadAction)
+        {
+            _isSavingPreset = false;
+            _isLoadingPreset = false;
+            SetPresetTargetButtonsActive(false);
+            if(string.IsNullOrEmpty(path))
+            {
+                return;
+            }
+
+            FileUtils.UpdateLastBrowseDir(path);
+            saveOrLoadAction();
+            UpdateBuiltInPresetButtons(null);
         }
 
         void OnCustomPresetButtonClicked(int customPreset)
