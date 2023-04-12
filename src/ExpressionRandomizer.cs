@@ -308,6 +308,8 @@ namespace extraltodeus
             foreach(var morph in _morphsControlUI.GetMorphs())
             {
                 if(
+                    !morph.hasBoneModificationFormulas &&
+                    !morph.hasBoneRotationFormulas &&
                     _poseRegions.Any(morph.region.Contains) &&
                     !_excludeRegions.Any(morph.region.Contains) ||
                     _tailorList.Any(morph.displayName.Contains)
@@ -1289,9 +1291,9 @@ namespace extraltodeus
 
         void SetNewRandomMorphValues()
         {
-            if(UnityEngine.Random.Range(0f, 100f) <= _triggerChanceJsf.val || !_randomJsb.val)
+            foreach(var morphModel in _enabledMorphs)
             {
-                foreach(var morphModel in _enabledMorphs)
+                if(!_randomJsb.val || UnityEngine.Random.Range(0f, 100f) <= _triggerChanceJsf.val)
                 {
                     morphModel.SetNewMorphValue(_minJsf.val, _maxJsf.val, _multiJsf.val, _abaJsb.val);
                 }
