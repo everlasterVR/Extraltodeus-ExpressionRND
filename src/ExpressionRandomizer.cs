@@ -1378,8 +1378,22 @@ namespace extraltodeus
                 yield break;
             }
 
-            CheckBuiltInPresetEnabledInJSON(jc);
-            base.RestoreFromJSON(jc, restorePhysical, restoreAppearance, presetAtoms, setMissingToDefault);
+            if(!jc.Keys.Any())
+            {
+                /* When migrating from legacy JSON, for some reason jc == {} if the storable was not present in the original save file,
+                 * even though file loaded with MergeLoadJSON does contain all necessary storables. No clue why.
+                 *
+                 * In this case, the restore is skipped and default Idle preset is enabled instead.
+                 */
+                _presetSetOnInit = Name.IDLE;
+                base.RestoreFromJSON(_builtInPresetJSONs[Name.IDLE]);
+            }
+            else
+            {
+                CheckBuiltInPresetEnabledInJSON(jc);
+                base.RestoreFromJSON(jc, restorePhysical, restoreAppearance, presetAtoms, setMissingToDefault);
+            }
+
             _restoringFromJson = false;
         }
 

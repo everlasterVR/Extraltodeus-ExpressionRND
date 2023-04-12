@@ -47,7 +47,7 @@ namespace extraltodeuslExpRandPlugin
                 ["id"] = "PluginManager",
                 ["plugins"] = new JSONClass
                 {
-                    [uid] = $"{GetPackagePath()}Custom/Scripts/__Frequently Used/ExpressionRandomizer.cslist",
+                    [uid] = $"{GetPackagePath(uid)}Custom/Scripts/__Frequently Used/ExpressionRandomizer.cslist",
                 },
             });
             storables.Add(storedParams);
@@ -81,16 +81,7 @@ namespace extraltodeuslExpRandPlugin
              */
 
             string tmpPresetName = $"tmp_{Guid.NewGuid().ToString().Substring(0, 7)}";
-            string uid = FindPluginUid(jc); // e.g. plugin#0
-            if(uid == null)
-            {
-                SuperController.LogError(
-                    $"{nameof(ExpressionRandomizer)}: Failed to auto-migrate from VamTimbo.Extraltodeus-ExpressionRND.1.var:" +
-                    " could not find plugin UID from plugin JSON or pluginManager JSON"
-                );
-                yield break;
-            }
-
+            string uid = GetPluginId();
             MigrateFromLegacyJSON(jc, uid);
 
             string savePath = $"Custom/Atom/Person/Plugins/Preset_{tmpPresetName}.vap";
@@ -107,28 +98,6 @@ namespace extraltodeuslExpRandPlugin
             pluginPresetManagerControl.SetStringParamValue("presetName", currentPresetName);
 
             manager.RemovePluginWithUID(uid);
-        }
-
-        string FindPluginUid(JSONClass jc)
-        {
-            /* Plugin data storable exists */
-            if(jc.HasKey("id"))
-            {
-                return jc["id"].Value.Split('_').First();
-            }
-
-            /* Plugin data storable does not exist -> find uid from manager JSON */
-            var managerPluginsJSON = manager.GetJSON()["plugins"].AsObject;
-            foreach(string key in managerPluginsJSON.Keys)
-            {
-                string fullPath = managerPluginsJSON[key].Value;
-                if(fullPath.StartsWith("VamTimbo.Extraltodeus-ExpressionRND"))
-                {
-                    return key;
-                }
-            }
-
-            return null;
         }
 
         static void MigrateFromLegacyJSON(JSONClass jc, string uid)
@@ -204,17 +173,21 @@ namespace extraltodeuslExpRandPlugin
             }
         }
 
-        string GetPackageId()
+        string GetPluginId()
         {
-            string id = name.Substring(0, name.IndexOf('_'));
-            string filename = manager.GetJSON()["plugins"][id].Value;
+            return name.Substring(0, name.IndexOf('_'));
+        }
+
+        string GetPackageId(string pluginUid)
+        {
+            string filename = manager.GetJSON()["plugins"][pluginUid].Value;
             int idx = filename.IndexOf(":/", StringComparison.Ordinal);
             return idx >= 0 ? filename.Substring(0, idx) : null;
         }
 
-        string GetPackagePath()
+        string GetPackagePath(string pluginUid)
         {
-            string packageId = GetPackageId();
+            string packageId = GetPackageId(pluginUid);
             return packageId == null ? "" : $"{packageId}:/";
         }
     }
