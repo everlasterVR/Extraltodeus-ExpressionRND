@@ -666,7 +666,7 @@ namespace extraltodeus
                     path += "." + FileUtils.PRESET_EXT;
                 }
 
-                SaveJSON(GetJSON(), path);
+                SaveJSON(GetJSONInternal(), path);
                 SuperController.singleton.DoSaveScreenshot(path);
             });
         }
@@ -691,7 +691,7 @@ namespace extraltodeus
             if(_isSavingPreset)
             {
                 int index = customPreset - 1;
-                _customPresetJSONs[index] = GetJSON();
+                _customPresetJSONs[index] = GetJSONInternal();
                 _isSavingPreset = false;
             }
             else if(_isLoadingPreset)
@@ -1422,6 +1422,22 @@ namespace extraltodeus
 
         public override JSONClass GetJSON(bool includePhysical = true, bool includeAppearance = true, bool forceStore = false)
         {
+            var jc = GetJSONInternal(includePhysical, includeAppearance, forceStore);
+            if(_customPresetJSONs[0] != null)
+            {
+                jc["Preset 1"] = _customPresetJSONs[0];
+            }
+
+            if(_customPresetJSONs[1] != null)
+            {
+                jc["Preset 2"] = _customPresetJSONs[1];
+            }
+
+            return jc;
+        }
+
+        JSONClass GetJSONInternal(bool includePhysical = true, bool includeAppearance = true, bool forceStore = false)
+        {
             var jc = base.GetJSON(includePhysical, includeAppearance, forceStore);
             foreach(var param in _alwaysStoreFloatParams)
             {
@@ -1489,6 +1505,15 @@ namespace extraltodeus
             {
                 CheckBuiltInPresetEnabledInJSON(jc);
                 base.RestoreFromJSON(jc, restorePhysical, restoreAppearance, presetAtoms, setMissingToDefault);
+                if(jc.HasKey("Preset 1"))
+                {
+                    _customPresetJSONs[0] = jc["Preset 1"].AsObject;
+                }
+
+                if(jc.HasKey("Preset 2"))
+                {
+                    _customPresetJSONs[1] = jc["Preset 2"].AsObject;
+                }
             }
 
             _restoringFromJson = false;
