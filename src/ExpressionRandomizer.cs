@@ -11,12 +11,30 @@ using UnityEngine.UI;
 
 namespace extraltodeus
 {
+    static class Name
+    {
+        public const string CHANCE_TO_TRIGGER = "Chance to trigger";
+        public const string COLLISION_TRIGGER = "Collision trigger";
+        public const string ENJOY = "Enjoy";
+        public const string FLIRT = "Flirt";
+        public const string IDLE = "Idle";
+        public const string LOOP_LENGTH = "Loop length";
+        public const string MASTER_SPEED = "Master speed";
+        public const string MAXIMUM_VALUE = "Maximum value";
+        public const string MINIMUM_VALUE = "Minimum value";
+        public const string MORPHING_SPEED = "Morphing speed";
+        public const string MULTIPLIER = "Multiplier";
+        public const string PLAY = "Play";
+        public const string RANDOM_CHANCES_FOR_TRANSITIONS = "Random chances for transitions";
+        public const string RESET_USED_EXPRESSIONS_AT_LOOP = "Reset used expressions at loop";
+        public const string SMOOTH = "Smooth";
+        public const string TRIGGER_TRANSITIONS_MANUALLY = "Trigger transitions manually";
+    }
+
     sealed class ExpressionRandomizer : ScriptBase
     {
         const string VERSION = "0.0.0";
-        const string IDLE = "Idle";
-        const string FLIRT = "Flirt";
-        const string ENJOY = "Enjoy";
+
         const string EXP_RAND_TRIGGER = "ExpRandTrigger";
         const string COLLISION_TRIGGER_DEFAULT_VAL = "None";
         const string FILTER_DEFAULT_VAL = "Filter morphs...";
@@ -103,23 +121,21 @@ namespace extraltodeus
         readonly Dictionary<string, JSONClass> _builtInPresetJSONs = new Dictionary<string, JSONClass>
         {
             {
-                IDLE,
+                Name.IDLE,
                 new JSONClass
                 {
                     /* Settings */
-                    ["Play"] = { AsBool = true },
-                    ["Smooth"] = { AsBool = true },
-                    ["Reset used expressions at loop"] = { AsBool = true },
-                    ["Trigger transitions manually"] = { AsBool = false },
-                    ["Random chances for transitions"] = { AsBool = false },
-                    ["Minimum value"] = { AsFloat = -0.15f },
-                    ["Maximum value"] = { AsFloat = 0.35f },
-                    ["Multiplier"] = { AsFloat = 1f },
-                    ["Master speed"] = { AsFloat = 1f },
-                    ["Loop length"] = { AsFloat = 2f },
-                    ["Morphing speed"] = { AsFloat = 1f },
-                    ["Chance to trigger"] = { AsFloat = 75f },
-                    ["Collision trigger"] = "None",
+                    [Name.PLAY] = { AsBool = true },
+                    [Name.SMOOTH] = { AsBool = true },
+                    [Name.RESET_USED_EXPRESSIONS_AT_LOOP] = { AsBool = true },
+                    [Name.TRIGGER_TRANSITIONS_MANUALLY] = { AsBool = false },
+                    [Name.RANDOM_CHANCES_FOR_TRANSITIONS] = { AsBool = true },
+                    [Name.MINIMUM_VALUE] = { AsFloat = -0.15f },
+                    [Name.MAXIMUM_VALUE] = { AsFloat = 0.35f },
+                    [Name.MULTIPLIER] = { AsFloat = 1f },
+                    [Name.MASTER_SPEED] = { AsFloat = 1f },
+                    [Name.LOOP_LENGTH] = { AsFloat = 2f },
+                    [Name.MORPHING_SPEED] = { AsFloat = 1f },
                     /* Enabled morphs */
                     ["Brow/Brow Inner Up Left"] = { AsBool = true },
                     ["Brow/Brow Inner Up Right"] = { AsBool = true },
@@ -137,23 +153,21 @@ namespace extraltodeus
                 }
             },
             {
-                FLIRT,
+                Name.FLIRT,
                 new JSONClass
                 {
                     /* Settings */
-                    ["Play"] = { AsBool = true },
-                    ["Smooth"] = { AsBool = true },
-                    ["Reset used expressions at loop"] = { AsBool = true },
-                    ["Trigger transitions manually"] = { AsBool = false },
-                    ["Random chances for transitions"] = { AsBool = false },
-                    ["Minimum value"] = { AsFloat = -0.15f },
-                    ["Maximum value"] = { AsFloat = 0.35f },
-                    ["Multiplier"] = { AsFloat = 1.6f },
-                    ["Master speed"] = { AsFloat = 3f },
-                    ["Loop length"] = { AsFloat = 2f },
-                    ["Morphing speed"] = { AsFloat = 1f },
-                    ["Chance to trigger"] = { AsFloat = 75f },
-                    ["Collision trigger"] = "None",
+                    [Name.PLAY] = { AsBool = true },
+                    [Name.SMOOTH] = { AsBool = true },
+                    [Name.RESET_USED_EXPRESSIONS_AT_LOOP] = { AsBool = true },
+                    [Name.TRIGGER_TRANSITIONS_MANUALLY] = { AsBool = false },
+                    [Name.RANDOM_CHANCES_FOR_TRANSITIONS] = { AsBool = true },
+                    [Name.MINIMUM_VALUE] = { AsFloat = -0.15f },
+                    [Name.MAXIMUM_VALUE] = { AsFloat = 0.35f },
+                    [Name.MULTIPLIER] = { AsFloat = 1.6f },
+                    [Name.MASTER_SPEED] = { AsFloat = 3f },
+                    [Name.LOOP_LENGTH] = { AsFloat = 2f },
+                    [Name.MORPHING_SPEED] = { AsFloat = 1f },
                     /* Enabled morphs */
                     ["Brow/Brow Inner Up Left"] = { AsBool = true },
                     ["Brow/Brow Inner Up Right"] = { AsBool = true },
@@ -169,23 +183,21 @@ namespace extraltodeus
                 }
             },
             {
-                ENJOY,
+                Name.ENJOY,
                 new JSONClass
                 {
                     /* Settings */
-                    ["Play"] = { AsBool = true },
-                    ["Smooth"] = { AsBool = true },
-                    ["Reset used expressions at loop"] = { AsBool = true },
-                    ["Trigger transitions manually"] = { AsBool = false },
-                    ["Random chances for transitions"] = { AsBool = false },
-                    ["Minimum value"] = { AsFloat = -0.15f },
-                    ["Maximum value"] = { AsFloat = 0.35f },
-                    ["Multiplier"] = { AsFloat = 1.8f },
-                    ["Master speed"] = { AsFloat = 4.3f },
-                    ["Loop length"] = { AsFloat = 2f },
-                    ["Morphing speed"] = { AsFloat = 1f },
-                    ["Chance to trigger"] = { AsFloat = 75f },
-                    ["Collision trigger"] = "None",
+                    [Name.PLAY] = { AsBool = true },
+                    [Name.SMOOTH] = { AsBool = true },
+                    [Name.RESET_USED_EXPRESSIONS_AT_LOOP] = { AsBool = true },
+                    [Name.TRIGGER_TRANSITIONS_MANUALLY] = { AsBool = false },
+                    [Name.RANDOM_CHANCES_FOR_TRANSITIONS] = { AsBool = true },
+                    [Name.MINIMUM_VALUE] = { AsFloat = -0.15f },
+                    [Name.MAXIMUM_VALUE] = { AsFloat = 0.35f },
+                    [Name.MULTIPLIER] = { AsFloat = 1.8f },
+                    [Name.MASTER_SPEED] = { AsFloat = 4.3f },
+                    [Name.LOOP_LENGTH] = { AsFloat = 2f },
+                    [Name.MORPHING_SPEED] = { AsFloat = 1f },
                     /* Enabled morphs */
                     ["Brow/Brow Inner Up Left"] = { AsBool = true },
                     ["Brow/Brow Inner Up Right"] = { AsBool = true },
@@ -202,12 +214,15 @@ namespace extraltodeus
         [SuppressMessage("ReSharper", "InconsistentNaming")]
         readonly JSONClass[] _customPresetJSONs = { null, null };
 
-        bool _idlePresetSetOnInit;
+        string _presetSetOnInit;
         bool _restoringFromJson;
         Atom _person;
         GenerateDAZMorphsControlUI _morphsControlUI;
         List<MorphModel> _enabledMorphs;
         readonly List<MorphModel> _morphModels = new List<MorphModel>();
+
+        readonly List<JSONStorableFloat> _alwaysStoreFloatParams = new List<JSONStorableFloat>();
+        readonly List<JSONStorableBool> _alwaysStoreBoolParams = new List<JSONStorableBool>();
 
         JSONStorableFloat _minJsf;
         JSONStorableFloat _maxJsf;
@@ -244,23 +259,33 @@ namespace extraltodeus
             StartCoroutine(InitCo());
         }
 
-        JSONStorableFloat NewStorableFloat(string name, float val, float min, float max)
+        JSONStorableFloat NewStorableFloat(string name, float val, float min, float max, bool alwaysStore = true)
         {
             var jsf = new JSONStorableFloat(name, val, min, max)
             {
                 storeType = JSONStorableParam.StoreType.Full,
             };
             RegisterFloat(jsf);
+            if(alwaysStore)
+            {
+                _alwaysStoreFloatParams.Add(jsf);
+            }
+
             return jsf;
         }
 
-        JSONStorableBool NewStorableBool(string name, bool val)
+        JSONStorableBool NewStorableBool(string name, bool val, bool alwaysStore = true)
         {
             var jsb = new JSONStorableBool(name, val)
             {
                 storeType = JSONStorableParam.StoreType.Full,
             };
             RegisterBool(jsb);
+            if(alwaysStore)
+            {
+                _alwaysStoreBoolParams.Add(jsb);
+            }
+
             return jsb;
         }
 
@@ -294,25 +319,25 @@ namespace extraltodeus
 
             _morphModels.Sort((a, b) => string.Compare(a.Label, b.Label, StringComparison.Ordinal));
 
-            _minJsf = NewStorableFloat("Minimum value", -0.15f, -1f, 1.0f);
-            _maxJsf = NewStorableFloat("Maximum value", 0.35f, -1f, 1.0f);
-            _multiJsf = NewStorableFloat("Multiplier", 1f, 0f, 2f);
-            _masterSpeedJsf = NewStorableFloat("Master speed", 1f, 0f, 10f);
-            _playJsb = NewStorableBool("Play", true);
+            _minJsf = NewStorableFloat(Name.MINIMUM_VALUE, -0.15f, -1f, 1.0f);
+            _maxJsf = NewStorableFloat(Name.MAXIMUM_VALUE, 0.35f, -1f, 1.0f);
+            _multiJsf = NewStorableFloat(Name.MULTIPLIER, 1f, 0f, 2f);
+            _masterSpeedJsf = NewStorableFloat(Name.MASTER_SPEED, 1f, 0f, 10f);
+            _playJsb = NewStorableBool(Name.PLAY, true);
             _playJsb.setCallbackFunction = value => _play = value;
             _play = _playJsb.val;
-            _smoothJsb = NewStorableBool("Smooth", true);
-            _animWaitJsf = NewStorableFloat("Loop length", 2f, 0.1f, 20f);
-            _animLengthJsf = NewStorableFloat("Morphing speed", 1.0f, 0.1f, 20f);
-            _abaJsb = NewStorableBool("Reset used expressions at loop", true);
-            _manualJsb = NewStorableBool("Trigger transitions manually", false);
-            _randomJsb = NewStorableBool("Random chances for transitions", false);
-            _triggerChanceJsf = NewStorableFloat("Chance to trigger", 75f, 0f, 100f);
+            _smoothJsb = NewStorableBool(Name.SMOOTH, true);
+            _animWaitJsf = NewStorableFloat(Name.LOOP_LENGTH, 2f, 0.1f, 20f);
+            _animLengthJsf = NewStorableFloat(Name.MORPHING_SPEED, 1.0f, 0.1f, 20f);
+            _abaJsb = NewStorableBool(Name.RESET_USED_EXPRESSIONS_AT_LOOP, true);
+            _manualJsb = NewStorableBool(Name.TRIGGER_TRANSITIONS_MANUALLY, false, false);
+            _randomJsb = NewStorableBool(Name.RANDOM_CHANCES_FOR_TRANSITIONS, true, false);
+            _triggerChanceJsf = NewStorableFloat(Name.CHANCE_TO_TRIGGER, 75f, 0f, 100f, false);
             _manualTriggerAction = new JSONStorableAction("Trigger transition", SetNewRandomMorphValues);
             RegisterAction(_manualTriggerAction);
 
             _collisionTriggerJssc = new JSONStorableStringChooser(
-                "Collision trigger",
+                Name.COLLISION_TRIGGER,
                 new List<string>
                 {
                     COLLISION_TRIGGER_DEFAULT_VAL,
@@ -327,7 +352,7 @@ namespace extraltodeus
                     "DeeperVaginaTrigger",
                 },
                 COLLISION_TRIGGER_DEFAULT_VAL,
-                "Collision trigger"
+                Name.COLLISION_TRIGGER
             );
             RegisterStringChooser(_collisionTriggerJssc);
             _collisionTriggerJssc.setCallbackFunction = val =>
@@ -371,7 +396,7 @@ namespace extraltodeus
             _enabledMorphs = new List<MorphModel>();
             foreach(var morphModel in _morphModels)
             {
-                morphModel.EnabledJsb = NewStorableBool(morphModel.Label, false);
+                morphModel.EnabledJsb = NewStorableBool(morphModel.Label, false, false);
                 morphModel.EnabledJsb.setCallbackFunction = on =>
                 {
                     if(!on)
@@ -394,9 +419,8 @@ namespace extraltodeus
 
             if(!_restoringFromJson)
             {
-                // TODO what if this preset actually active in JSON?
-                _idlePresetSetOnInit = true;
-                base.RestoreFromJSON(_builtInPresetJSONs[IDLE]);
+                _presetSetOnInit = Name.IDLE;
+                base.RestoreFromJSON(_builtInPresetJSONs[Name.IDLE]);
             }
 
             InvokeRepeating(nameof(TriggerMaintainer), 3f, 3f); // To check if the selected collision trigger is still there every 3 seconds
@@ -475,9 +499,8 @@ namespace extraltodeus
             }
         }
 
-        UIDynamicButton _idlePresetButton;
-        UIDynamicButton _flirtPresetButton;
-        UIDynamicButton _enjoyPresetButton;
+        readonly Dictionary<string, UIDynamicButton> _builtInPresetButtons = new Dictionary<string, UIDynamicButton>();
+
         UIDynamicButton _saveButton;
         UIDynamicButton _loadButton;
         UIDynamicButton _preset1Button;
@@ -503,35 +526,35 @@ namespace extraltodeus
         {
             CreateSpacer().height = 106f;
 
-            _idlePresetButton = CreateCustomButton(IDLE, new Vector2(10, -62), new Vector2(-910, 52));
-            _idlePresetButton.buttonColor = new Color(0.66f, 0.77f, 0.88f);
+            var idlePresetButton = CreateCustomButton(Name.IDLE, new Vector2(10, -62), new Vector2(-910, 52));
+            idlePresetButton.buttonColor = new Color(0.66f, 0.77f, 0.88f);
+            _builtInPresetButtons[Name.IDLE] = idlePresetButton;
 
-            _flirtPresetButton = CreateCustomButton(FLIRT, new Vector2(10 + 175, -62), new Vector2(-910, 52));
-            _flirtPresetButton.buttonColor = new Color(0.88f, 0.77f, 0.66f);
+            var flirtPresetButton = CreateCustomButton(Name.FLIRT, new Vector2(10 + 175, -62), new Vector2(-910, 52));
+            flirtPresetButton.buttonColor = new Color(0.88f, 0.77f, 0.66f);
+            _builtInPresetButtons[Name.FLIRT] = flirtPresetButton;
 
-            _enjoyPresetButton = CreateCustomButton(ENJOY, new Vector2(10 + 175 * 2, -62), new Vector2(-910, 52));
-            _enjoyPresetButton.buttonColor = new Color(0.88f, 0.66f, 0.77f);
+            var enjoyPresetButton = CreateCustomButton(Name.ENJOY, new Vector2(10 + 175 * 2, -62), new Vector2(-910, 52));
+            enjoyPresetButton.buttonColor = new Color(0.88f, 0.66f, 0.77f);
+            _builtInPresetButtons[Name.ENJOY] = enjoyPresetButton;
 
-            _idlePresetButton.button.onClick.AddListener(() =>
+            idlePresetButton.button.onClick.AddListener(() =>
             {
-                base.RestoreFromJSON(_builtInPresetJSONs[IDLE]);
-                SetBuiltInPresetSelected(_idlePresetButton);
+                base.RestoreFromJSON(_builtInPresetJSONs[Name.IDLE]);
+                UpdateBuiltInPresetButtons(Name.IDLE);
             });
-            _flirtPresetButton.button.onClick.AddListener(() =>
+            flirtPresetButton.button.onClick.AddListener(() =>
             {
-                base.RestoreFromJSON(_builtInPresetJSONs[FLIRT]);
-                SetBuiltInPresetSelected(_flirtPresetButton);
+                base.RestoreFromJSON(_builtInPresetJSONs[Name.FLIRT]);
+                UpdateBuiltInPresetButtons(Name.FLIRT);
             });
-            _enjoyPresetButton.button.onClick.AddListener(() =>
+            enjoyPresetButton.button.onClick.AddListener(() =>
             {
-                base.RestoreFromJSON(_builtInPresetJSONs[ENJOY]);
-                SetBuiltInPresetSelected(_enjoyPresetButton);
+                base.RestoreFromJSON(_builtInPresetJSONs[Name.ENJOY]);
+                UpdateBuiltInPresetButtons(Name.ENJOY);
             });
 
-            if(_idlePresetSetOnInit)
-            {
-                SetBuiltInPresetSelected(_idlePresetButton);
-            }
+            UpdateBuiltInPresetButtons(_presetSetOnInit);
 
             _saveButton = CreateCustomButton("Save", new Vector2(10, -118), new Vector2(-981, 52));
             _saveButton.button.onClick.AddListener(() => StartCoroutine(OnSaveButtonClicked()));
@@ -598,27 +621,27 @@ namespace extraltodeus
                 else
                 {
                     base.RestoreFromJSON(presetJSON);
-                    SetBuiltInPresetSelected(null);
+                    UpdateBuiltInPresetButtons(null);
                 }
 
                 _isLoadingPreset = false;
             }
         }
 
-        void SetBuiltInPresetSelected(UIDynamicButton button)
+        void UpdateBuiltInPresetButtons(string selectedPresetName)
         {
-            _idlePresetButton.label = "Idle";
-            _flirtPresetButton.label = "Flirt";
-            _enjoyPresetButton.label = "Enjoy";
+            _builtInPresetButtons[Name.IDLE].label = "Idle";
+            _builtInPresetButtons[Name.FLIRT].label = "Flirt";
+            _builtInPresetButtons[Name.ENJOY].label = "Enjoy";
 
-            _idlePresetButton.SetNormalFocusedColor();
-            _flirtPresetButton.SetNormalFocusedColor();
-            _enjoyPresetButton.SetNormalFocusedColor();
+            _builtInPresetButtons[Name.IDLE].SetNormalFocusedColor();
+            _builtInPresetButtons[Name.FLIRT].SetNormalFocusedColor();
+            _builtInPresetButtons[Name.ENJOY].SetNormalFocusedColor();
 
-            if(button)
+            if(!string.IsNullOrEmpty(selectedPresetName) && _builtInPresetButtons.ContainsKey(selectedPresetName))
             {
-                button.label = button.label.Bold();
-                button.SetInvisibleFocusedColor();
+                _builtInPresetButtons[selectedPresetName].label = _builtInPresetButtons[selectedPresetName].label.Bold();
+                _builtInPresetButtons[selectedPresetName].SetInvisibleFocusedColor();
             }
         }
 
@@ -1294,6 +1317,22 @@ namespace extraltodeus
             }
         }
 
+        public override JSONClass GetJSON(bool includePhysical = true, bool includeAppearance = true, bool forceStore = false)
+        {
+            var jc = base.GetJSON(includePhysical, includeAppearance, forceStore);
+            foreach(var param in _alwaysStoreFloatParams)
+            {
+                jc[param.name].AsFloat = param.val;
+            }
+
+            foreach(var param in _alwaysStoreBoolParams)
+            {
+                jc[param.name].AsBool = param.val;
+            }
+
+            return jc;
+        }
+
         public override void RestoreFromJSON(
             JSONClass jc,
             bool restorePhysical = true,
@@ -1333,8 +1372,86 @@ namespace extraltodeus
                 yield break;
             }
 
+            CheckBuiltInPresetEnabledInJSON(jc);
             base.RestoreFromJSON(jc, restorePhysical, restoreAppearance, presetAtoms, setMissingToDefault);
             _restoringFromJson = false;
+        }
+
+        void CheckBuiltInPresetEnabledInJSON(JSONClass jc)
+        {
+            /* Storable params that don't matter for the equality comparison of stored JSON to built-in preset JSON */
+            string[] nonComparisonKeys =
+            {
+                "id",
+                "pluginLabel",
+                "enabled",
+                Name.PLAY,
+                Name.TRIGGER_TRANSITIONS_MANUALLY,
+                Name.RANDOM_CHANCES_FOR_TRANSITIONS,
+                Name.CHANCE_TO_TRIGGER,
+                Name.COLLISION_TRIGGER,
+            };
+
+            var jcKeys = jc.Keys.ToList();
+            jcKeys.RemoveAll(nonComparisonKeys.Contains);
+            jcKeys.Sort();
+
+            foreach(var kvp in _builtInPresetJSONs)
+            {
+                var presetJSON = kvp.Value;
+                var presetJSONKeys = presetJSON.Keys.ToList();
+                presetJSONKeys.RemoveAll(nonComparisonKeys.Contains);
+                presetJSONKeys.Sort();
+
+                /* If keys are the same, the same morphs are enabled, but other relevant float/bool params might still differ. */
+                if(jcKeys.SequenceEqual(presetJSONKeys) && CheckEqualityComparisonKeys(jc, presetJSON))
+                {
+                    _presetSetOnInit = kvp.Key;
+                    break;
+                }
+            }
+        }
+
+        static bool CheckEqualityComparisonKeys(JSONClass jc, JSONClass presetJSON)
+        {
+            string[] boolKeys =
+            {
+                Name.SMOOTH,
+                Name.RESET_USED_EXPRESSIONS_AT_LOOP,
+            };
+
+            string[] floatKeys =
+            {
+                Name.MINIMUM_VALUE,
+                Name.MAXIMUM_VALUE,
+                Name.MASTER_SPEED,
+                Name.LOOP_LENGTH,
+                Name.MORPHING_SPEED,
+            };
+
+            foreach(string key in boolKeys)
+            {
+                if(jc.HasKey(key) && presetJSON.HasKey(key))
+                {
+                    if(jc[key].AsBool != presetJSON[key].AsBool)
+                    {
+                        return false;
+                    }
+                }
+            }
+
+            foreach(string key in floatKeys)
+            {
+                if(jc.HasKey(key) && presetJSON.HasKey(key))
+                {
+                    if(Math.Abs(jc[key].AsFloat - presetJSON[key].AsFloat) > 0.009f)
+                    {
+                        return false;
+                    }
+                }
+            }
+
+            return true;
         }
 
         static bool _savingScene;
