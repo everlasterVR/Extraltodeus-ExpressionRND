@@ -814,7 +814,7 @@ namespace extraltodeus
                 _morphToggles[i] = CreateToggle(_morphModels[i].EnabledJsb, true);
             }
 
-            _prevPageButton = CreateCustomButton("< Prev", new Vector2(549, -1229), new Vector2(-885, 52), true);
+            _prevPageButton = CreateCustomButton("< Prev", new Vector2(549, -1229), new Vector2(-885, 52));
             _prevPageButton.buttonColor = Color.gray;
             _prevPageButton.textColor = Color.white;
             _prevPageButton.button.onClick.AddListener(() =>
@@ -986,8 +986,8 @@ namespace extraltodeus
         {
             var t = InstantiateToContent(manager.configurableButtonPrefab);
             var rectTransform = GetRekt(t);
-            rectTransform.anchoredPosition = new Vector2(973, -321);
-            rectTransform.sizeDelta = new Vector2(-980, 48);
+            rectTransform.anchoredPosition = new Vector2(973, -318);
+            rectTransform.sizeDelta = new Vector2(-980, 50);
             var button = t.GetComponent<UIDynamicButton>();
             button.label = "Clear";
             button.buttonText.fontSize = 26;
@@ -1117,7 +1117,7 @@ namespace extraltodeus
                 var morphModel = _morphModels[_filteredIndices[i]];
                 if(isOnPage)
                 {
-                    var morphToggle = _morphToggles[i % 10];
+                    var morphToggle = _morphToggles[i % ITEMS_PER_PAGE];
                     toggleToJSONStorableBool[morphToggle] = morphModel.EnabledJsb;
                     morphToggle.label = _regionJssc.val == "All" ? morphModel.Label : morphModel.DisplayName;
                     morphModel.EnabledJsb.toggle = morphToggle.toggle;
@@ -1133,7 +1133,7 @@ namespace extraltodeus
             /* Hide toggles not associated with any storable on the final page */
             if(_currentPage == _totalPages - 1 || _totalPages == 0)
             {
-                for(int i = _filteredIndices.Count % 10; i < ITEMS_PER_PAGE; i++)
+                for(int i = _filteredIndices.Count % ITEMS_PER_PAGE; i < ITEMS_PER_PAGE; i++)
                 {
                     _morphToggles[i].SetVisible(false);
                 }
