@@ -240,6 +240,10 @@ namespace extraltodeus
         JSONStorableBool _randomJsb;
         JSONStorableFloat _triggerChanceJsf;
         JSONStorableAction _manualTriggerAction;
+        JSONStorableAction _loadPreset1Action;
+        JSONStorableAction _loadPreset2Action;
+        JSONStorableUrl _loadPresetWithPathUrlJSON;
+        JSONStorableActionPresetFilePath _loadPresetWithPathJSON;
         JSONStorableStringChooser _collisionTriggerJssc;
         JSONStorableBool _useAndFilterJsb;
         JSONStorableBool _onlyShowActiveJsb;
@@ -292,6 +296,13 @@ namespace extraltodeus
             return jsb;
         }
 
+        JSONStorableAction NewStorableAction(string name, JSONStorableAction.ActionCallback callback)
+        {
+            var action = new JSONStorableAction(name, callback);
+            RegisterAction(action);
+            return action;
+        }
+
         IEnumerator InitCo()
         {
             yield return new WaitForEndOfFrame();
@@ -338,8 +349,26 @@ namespace extraltodeus
             _manualJsb = NewStorableBool(Name.TRIGGER_TRANSITIONS_MANUALLY, false, false);
             _randomJsb = NewStorableBool(Name.RANDOM_CHANCES_FOR_TRANSITIONS, true, false);
             _triggerChanceJsf = NewStorableFloat(Name.CHANCE_TO_TRIGGER, 75f, 0f, 100f, false);
-            _manualTriggerAction = new JSONStorableAction("Trigger transition", SetNewRandomMorphValues);
-            RegisterAction(_manualTriggerAction);
+            _manualTriggerAction = NewStorableAction("Trigger transition", SetNewRandomMorphValues);
+            _loadPreset1Action = NewStorableAction("Load preset 1", () =>
+            {
+                _isLoadingPreset = true;
+                OnCustomPresetButtonClicked(1);
+            });
+            _loadPreset2Action = NewStorableAction("Load preset 2", () =>
+            {
+                _isLoadingPreset = true;
+                OnCustomPresetButtonClicked(2);
+            });
+            _loadPresetWithPathUrlJSON = new JSONStorableUrl("loadMocapWithPathUrl", string.Empty, "json", FileUtils.GetLastBrowseDir())
+            {
+                allowFullComputerBrowse = true,
+                allowBrowseAboveSuggestedPath = true,
+                hideExtension = true,
+                showDirs = true,
+            };
+            _loadPresetWithPathJSON = new JSONStorableActionPresetFilePath("Load preset with path", OnLoadPathSelected, _loadPresetWithPathUrlJSON);
+            RegisterPresetFilePathAction(_loadPresetWithPathJSON);
 
             _collisionTriggerJssc = new JSONStorableStringChooser(
                 Name.COLLISION_TRIGGER,
@@ -576,11 +605,11 @@ namespace extraltodeus
 
             _preset1Button = CreateCustomButton("1", new Vector2(10 + 230, -118), new Vector2(-986, 52));
             _preset1Button.SetActiveStyle(false, true);
-            _preset1Button.button.onClick.AddListener(() => OnCustomPresetButtonClicked(1));
+            _loadPreset1Action.RegisterButton(_preset1Button);
 
             _preset2Button = CreateCustomButton("2", new Vector2(10 + 329, -118), new Vector2(-986, 52));
             _preset2Button.SetActiveStyle(false, true);
-            _preset2Button.button.onClick.AddListener(() => OnCustomPresetButtonClicked(2));
+            _loadPreset2Action.RegisterButton(_preset2Button);
 
             _fileButton = CreateCustomButton("File", new Vector2(10 + 427, -118), new Vector2(-986, 52));
             _fileButton.SetActiveStyle(false, true);
@@ -618,7 +647,6 @@ namespace extraltodeus
 
         void OnLoadPathSelected(string path)
         {
-            // TODO test loading works on different plugin instance
             OnPathSelected(path, () =>
             {
                 var presetJSON = LoadJSON(path).AsObject;
@@ -660,26 +688,31 @@ namespace extraltodeus
 
         void OnCustomPresetButtonClicked(int customPreset)
         {
-            int index = customPreset - 1;
             if(_isSavingPreset)
             {
+                int index = customPreset - 1;
                 _customPresetJSONs[index] = GetJSON();
                 _isSavingPreset = false;
             }
             else if(_isLoadingPreset)
             {
-                var presetJSON = _customPresetJSONs[index];
-                if(presetJSON == null)
-                {
-                    Loggr.Message($"Preset {customPreset} is not saved yet.");
-                }
-                else
-                {
-                    base.RestoreFromJSON(presetJSON);
-                    UpdateBuiltInPresetButtons(null);
-                }
-
+                LoadCustomPreset(customPreset);
                 _isLoadingPreset = false;
+            }
+        }
+
+        void LoadCustomPreset(int customPreset)
+        {
+            int index = customPreset - 1;
+            var presetJSON = _customPresetJSONs[index];
+            if(presetJSON == null)
+            {
+                Loggr.Message($"Preset {customPreset} is not saved yet.");
+            }
+            else
+            {
+                base.RestoreFromJSON(presetJSON);
+                UpdateBuiltInPresetButtons(null);
             }
         }
 

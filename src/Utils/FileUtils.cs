@@ -43,6 +43,16 @@ static class FileUtils
         _lastBrowseDir = path.Substring(0, path.LastIndexOfAny(new[] { '/', '\\' })) + @"\";
     }
 
+    public static string GetLastBrowseDir()
+    {
+        if(string.IsNullOrEmpty(_lastBrowseDir))
+        {
+            _lastBrowseDir = SAVES_DIR;
+        }
+
+        return _lastBrowseDir;
+    }
+
     static void EnsureSavesDirExists()
     {
         if(!FileManagerSecure.DirectoryExists(SAVES_DIR))
