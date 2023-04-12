@@ -901,10 +901,12 @@ namespace extraltodeus
             var rectTransform = GetRekt(t);
             rectTransform.anchoredPosition = pos;
             rectTransform.sizeDelta = new Vector2(sizeX, 52);
+            #if ENV_DEVELOPMENT
             if(callbacks)
             {
                 SetDevUISliderCallbacks(rectTransform);
             }
+            #endif
 
             var toggle = t.GetComponent<UIDynamicToggle>();
             toggle.label = jsb.name;
@@ -918,10 +920,12 @@ namespace extraltodeus
             var rectTransform = GetRekt(t);
             rectTransform.anchoredPosition = pos;
             rectTransform.sizeDelta = size;
+            #if ENV_DEVELOPMENT
             if(callbacks)
             {
                 SetDevUISliderCallbacks(rectTransform);
             }
+            #endif
 
             var button = t.GetComponent<UIDynamicButton>();
             button.label = label;
@@ -935,10 +939,12 @@ namespace extraltodeus
             var rectTransform = GetRekt(t);
             rectTransform.anchoredPosition = pos;
             rectTransform.sizeDelta = size;
+            #if ENV_DEVELOPMENT
             if(callbacks)
             {
                 SetDevUISliderCallbacks(rectTransform);
             }
+            #endif
 
             var slider = t.GetComponent<UIDynamicSlider>();
             slider.rangeAdjustEnabled = false;
