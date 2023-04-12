@@ -412,6 +412,11 @@ namespace extraltodeus
                         _enabledMorphs.Remove(morphModel);
                         _awaitingResetMorphs.Add(morphModel);
                     }
+
+                    if(_onlyShowActiveJsb.val)
+                    {
+                        OnFilterChanged();
+                    }
                 };
 
                 if(morphModel.EnabledJsb.val)
