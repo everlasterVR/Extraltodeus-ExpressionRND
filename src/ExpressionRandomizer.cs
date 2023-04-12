@@ -96,6 +96,7 @@ namespace extraltodeus
             "Feet",
             "Waist",
             "Torso",
+            "Hands",
             "Eyes Closed Left",
             "Eyes Closed Right",
             "Mouth Smile Simple Left",
@@ -766,6 +767,7 @@ namespace extraltodeus
 
             _randomToggle = CreateToggle(_randomJsb);
             _triggerChanceSlider = CreateSlider(_triggerChanceJsf);
+            _triggerChanceSlider.valueFormat = "F0";
 
             _collisionTriggerPopup = CreateCollisionTriggerPopup();
 
