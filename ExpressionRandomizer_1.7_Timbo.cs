@@ -50,7 +50,6 @@ namespace extraltodeuslExpRandPlugin
                     [uid] = $"{GetPackagePath()}Custom/Scripts/__Frequently Used/ExpressionRandomizer.cslist",
                 },
             });
-            storedParams["id"] = storedParams["id"].Value.Replace("extraltodeuslExpRandPlugin", "extraltodeus");
             storables.Add(storedParams);
 
             return new JSONClass
@@ -73,8 +72,6 @@ namespace extraltodeuslExpRandPlugin
                 yield break;
             }
 
-            MigrateFromLegacyJSON(jc);
-
             /*
              * 1. Create fake preset JSON for loading the plugin with stored data from the .cslist
              * 2. Save fake preset JSON to temporary file
@@ -89,10 +86,12 @@ namespace extraltodeuslExpRandPlugin
             {
                 SuperController.LogError(
                     $"{nameof(ExpressionRandomizer)}: Failed to auto-migrate from VamTimbo.Extraltodeus-ExpressionRND.1.var:" +
-                    $" could not find plugin UID from plugin JSON or pluginManager JSON"
+                    " could not find plugin UID from plugin JSON or pluginManager JSON"
                 );
                 yield break;
             }
+
+            MigrateFromLegacyJSON(jc, uid);
 
             string savePath = $"Custom/Atom/Person/Plugins/Preset_{tmpPresetName}.vap";
             FileManagerSecure.WriteAllText(savePath, FakeCslistPluginPresetJSON(jc, uid).ToString(string.Empty));
@@ -132,8 +131,10 @@ namespace extraltodeuslExpRandPlugin
             return null;
         }
 
-        static void MigrateFromLegacyJSON(JSONClass jc)
+        static void MigrateFromLegacyJSON(JSONClass jc, string uid)
         {
+            jc["id"] = $"{uid}_extraltodeus.ExpressionRandomizer";
+
             foreach(string key in new[]
             {
                 "Brow/Brow Inner Up Left",
