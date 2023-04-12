@@ -1099,7 +1099,7 @@ namespace extraltodeus
             {
                 var morphModel = _morphModels[i];
 
-                if(_onlyShowActiveJsb.val && !_morphModels[i].EnabledJsb.val)
+                if(_onlyShowActiveJsb.val && !morphModel.EnabledJsb.val)
                 {
                     continue;
                 }
@@ -1139,12 +1139,15 @@ namespace extraltodeus
                 morphToggle.SetVisible(true);
             }
 
+            int onPageCount = 0;
+
             for(int i = 0; i < _filteredIndices.Count; i++)
             {
                 bool isOnPage = i >= _currentPage * ITEMS_PER_PAGE && i < (_currentPage + 1) * ITEMS_PER_PAGE;
                 var morphModel = _morphModels[_filteredIndices[i]];
                 if(isOnPage)
                 {
+                    onPageCount++;
                     var morphToggle = _morphToggles[i % ITEMS_PER_PAGE];
                     toggleToJSONStorableBool[morphToggle] = morphModel.EnabledJsb;
                     morphToggle.label = _regionJssc.val == "All" ? morphModel.Label : morphModel.DisplayName;
@@ -1159,12 +1162,9 @@ namespace extraltodeus
             }
 
             /* Hide toggles not associated with any storable on the final page */
-            if(_currentPage == _totalPages - 1 || _totalPages == 0)
+            for(int i = onPageCount; i < ITEMS_PER_PAGE; i++)
             {
-                for(int i = _filteredIndices.Count % ITEMS_PER_PAGE; i < ITEMS_PER_PAGE; i++)
-                {
-                    _morphToggles[i].SetVisible(false);
-                }
+                _morphToggles[i].SetVisible(false);
             }
 
             if(_prevPageButton)
