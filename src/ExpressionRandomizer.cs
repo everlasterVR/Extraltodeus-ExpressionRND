@@ -219,6 +219,7 @@ namespace extraltodeus
         Atom _person;
         GenerateDAZMorphsControlUI _morphsControlUI;
         List<MorphModel> _enabledMorphs;
+        List<MorphModel> _awaitingResetMorphs;
         readonly List<MorphModel> _morphModels = new List<MorphModel>();
 
         readonly List<JSONStorableFloat> _alwaysStoreFloatParams = new List<JSONStorableFloat>();
@@ -394,23 +395,25 @@ namespace extraltodeus
             );
 
             _enabledMorphs = new List<MorphModel>();
+            _awaitingResetMorphs = new List<MorphModel>();
             foreach(var morphModel in _morphModels)
             {
                 morphModel.EnabledJsb = NewStorableBool(morphModel.Label, false, false);
                 morphModel.EnabledJsb.setCallbackFunction = on =>
                 {
-                    if(!on)
+                    if(on)
                     {
-                        morphModel.ResetToInitial();
+                        morphModel.UpdateInitialValue();
+                        _awaitingResetMorphs.Remove(morphModel);
+                        _enabledMorphs.Add(morphModel);
                     }
                     else
                     {
-                        morphModel.UpdateInitialValue();
+                        _enabledMorphs.Remove(morphModel);
+                        _awaitingResetMorphs.Add(morphModel);
                     }
-
-                    _enabledMorphs.Clear();
-                    _enabledMorphs.AddRange(_morphModels.Where(item => item.EnabledJsb.val));
                 };
+
                 if(morphModel.EnabledJsb.val)
                 {
                     _enabledMorphs.Add(morphModel);
@@ -1239,6 +1242,17 @@ namespace extraltodeus
             }
         }
 
+        void SetNewRandomMorphValues()
+        {
+            if(UnityEngine.Random.Range(0f, 100f) <= _triggerChanceJsf.val || !_randomJsb.val)
+            {
+                foreach(var morphModel in _enabledMorphs)
+                {
+                    morphModel.SetNewMorphValue(_minJsf.val, _maxJsf.val, _multiJsf.val, _abaJsb.val);
+                }
+            }
+        }
+
         void FixedUpdate()
         {
             if(SkipUpdate)
@@ -1253,9 +1267,19 @@ namespace extraltodeus
                     : LinearInterpolant(_animLengthJsf.val, _masterSpeedJsf.val);
                 foreach(var morphModel in _enabledMorphs)
                 {
-                    if(morphModel.EnabledJsb.val)
+                    morphModel.CalculateMorphValue(interpolant);
+                }
+
+                int awaitingResetCount = _awaitingResetMorphs.Count;
+                if(awaitingResetCount > 0)
+                {
+                    for(int i = awaitingResetCount - 1; i >= 0; i--)
                     {
-                        morphModel.CalculateMorphValue(interpolant);
+                        var morphModel = _awaitingResetMorphs[i];
+                        if(morphModel.SmoothResetMorphValue(interpolant))
+                        {
+                            _awaitingResetMorphs.RemoveAt(i);
+                        }
                     }
                 }
             }
@@ -1277,22 +1301,6 @@ namespace extraltodeus
         static float LinearInterpolant(float animLength, float masterSpeed)
         {
             return Time.deltaTime * animLength * masterSpeed;
-        }
-
-        void SetNewRandomMorphValues()
-        {
-            if(UnityEngine.Random.Range(0f, 100f) <= _triggerChanceJsf.val || !_randomJsb.val)
-            {
-                foreach(var morphModel in _enabledMorphs)
-                {
-                    if(!morphModel.EnabledJsb.val)
-                    {
-                        continue;
-                    }
-
-                    morphModel.SetNewMorphValue(_minJsf.val, _maxJsf.val, _multiJsf.val, _abaJsb.val);
-                }
-            }
         }
 
         static bool CheckIfTriggerExists(CollisionTrigger trig)
@@ -1321,6 +1329,13 @@ namespace extraltodeus
                     morphModel.ResetToInitial();
                 }
             }
+
+            foreach(var morphModel in _awaitingResetMorphs)
+            {
+                morphModel.ResetToInitial();
+            }
+
+            _awaitingResetMorphs.Clear();
         }
 
         public override JSONClass GetJSON(bool includePhysical = true, bool includeAppearance = true, bool forceStore = false)

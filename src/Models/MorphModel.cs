@@ -13,6 +13,7 @@ namespace ExpressionRND.Models
         public string FinalRegion { get; }
 
         public string Label { get; }
+
         public JSONStorableBool EnabledJsb { get; set; }
 
         float _initialMorphValue;
@@ -53,9 +54,23 @@ namespace ExpressionRND.Models
             _initialMorphValue = _morph.morphValue;
         }
 
+        public bool SmoothResetMorphValue(float interpolant)
+        {
+            _currentMorphValue = Mathf.Lerp(_currentMorphValue, _initialMorphValue, interpolant);
+            bool finished = Mathf.Abs(_currentMorphValue - _initialMorphValue) < 0.001f;
+            if(finished)
+            {
+                _currentMorphValue = _initialMorphValue;
+            }
+
+            _morph.morphValue = _currentMorphValue;
+            return finished;
+        }
+
         public void ResetToInitial()
         {
-            _morph.morphValue = _initialMorphValue;
+            _currentMorphValue = _initialMorphValue;
+            _morph.morphValue = _currentMorphValue;
         }
 
         public void ZeroValue()
