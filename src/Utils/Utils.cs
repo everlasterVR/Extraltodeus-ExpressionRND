@@ -1,4 +1,4 @@
-﻿using System.Linq;
+﻿using UnityEngine;
 
 static class Utils
 {
@@ -11,5 +11,10 @@ static class Utils
             SuperController.singleton.freezeAnimationToggleAlt &&
             SuperController.singleton.freezeAnimationToggleAlt.isOn;
         return mainToggleFrozen || altToggleFrozen;
+    }
+
+    public static float RoundToDecimals(float value, float roundFactor = 1000f)
+    {
+        return Mathf.Round(value * roundFactor) / roundFactor;
     }
 }

@@ -33,12 +33,12 @@ namespace ExpressionRND.Models
 
             Label = FinalRegion + "/" + DisplayName;
             _initialMorphValue = _morph.morphValue;
-            _currentMorphValue = _morph.morphValue;
+            _currentMorphValue = Utils.RoundToDecimals(_morph.morphValue);
         }
 
         public void CalculateMorphValue(float interpolant)
         {
-            _currentMorphValue = Mathf.Lerp(_currentMorphValue, _newMorphValue, interpolant);
+            _currentMorphValue = Utils.RoundToDecimals(Mathf.Lerp(_currentMorphValue, _newMorphValue, interpolant));
             _morph.morphValue = _currentMorphValue;
         }
 
@@ -46,17 +46,17 @@ namespace ExpressionRND.Models
         {
             _newMorphValue = aba && _currentMorphValue > 0.1f
                 ? 0
-                : Random.Range(min, max) * multi;
+                : Utils.RoundToDecimals(Random.Range(min, max) * multi);
         }
 
         public void UpdateInitialValue()
         {
-            _initialMorphValue = _morph.morphValue;
+            _initialMorphValue = Utils.RoundToDecimals(_morph.morphValue);
         }
 
         public bool SmoothResetMorphValue(float interpolant)
         {
-            _currentMorphValue = Mathf.Lerp(_currentMorphValue, _initialMorphValue, interpolant);
+            _currentMorphValue = Utils.RoundToDecimals(Mathf.Lerp(_currentMorphValue, _initialMorphValue, interpolant));
             bool finished = Mathf.Abs(_currentMorphValue - _initialMorphValue) < 0.001f;
             if(finished)
             {
