@@ -629,6 +629,7 @@ namespace extraltodeus
                 var presetJSON = LoadJSON(path).AsObject;
                 if(presetJSON != null)
                 {
+                    presetJSON["enabled"].AsBool = enabled;
                     base.RestoreFromJSON(presetJSON);
                     UpdatePresetButtons(Name.FILE);
                 }
@@ -644,7 +645,9 @@ namespace extraltodeus
                     path += "." + FileUtils.PRESET_EXT;
                 }
 
-                SaveJSON(GetJSONInternal(), path);
+                var jc = GetJSONInternal();
+                jc.Remove("enabled");
+                SaveJSON(jc, path);
                 SuperController.singleton.DoSaveScreenshot(path);
                 UpdatePresetButtons(Name.FILE);
             });
@@ -666,7 +669,9 @@ namespace extraltodeus
         {
             if(_isSavingPreset)
             {
-                _presetJSONs[slot] = GetJSONInternal();
+                var jc = GetJSONInternal();
+                jc.Remove("enabled");
+                _presetJSONs[slot] = jc;
                 UpdatePresetButtons(slot);
             }
             else
@@ -686,6 +691,7 @@ namespace extraltodeus
             }
             else
             {
+                presetJSON["enabled"].AsBool = enabled;
                 base.RestoreFromJSON(presetJSON);
                 UpdatePresetButtons(slot);
             }
