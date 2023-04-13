@@ -16,9 +16,9 @@ namespace ExpressionRND.Models
 
         public JSONStorableBool EnabledJsb { get; set; }
 
-        float _initialMorphValue;
-        float _currentMorphValue;
-        float _newMorphValue;
+        float _initialValue;
+        float _currentValue;
+        float _targetValue;
 
         public MorphModel(DAZMorph morph, string displayName, string region)
         {
@@ -32,50 +32,55 @@ namespace ExpressionRND.Models
             FinalTwoRegions = secondLastIndex > -1 ? regions[secondLastIndex] + "/" + FinalRegion : FinalRegion;
 
             Label = FinalRegion + "/" + DisplayName;
-            _initialMorphValue = _morph.morphValue;
-            _currentMorphValue = Utils.RoundToDecimals(_morph.morphValue);
+            _initialValue = _morph.morphValue;
+            _currentValue = Utils.RoundToDecimals(_morph.morphValue);
         }
 
-        public void CalculateMorphValue(float interpolant)
+        public void CalculateValue(float interpolant)
         {
-            _currentMorphValue = Utils.RoundToDecimals(Mathf.Lerp(_currentMorphValue, _newMorphValue, interpolant));
-            _morph.morphValue = _currentMorphValue;
+            _currentValue = Utils.RoundToDecimals(Mathf.Lerp(_currentValue, _targetValue, interpolant));
+            _morph.morphValue = _currentValue;
         }
 
-        public void SetNewMorphValue(float min, float max, float multi, bool aba)
+        public void SetTargetValue(float min, float max, float multi, bool resetUsedExpressionsAtLoop)
         {
-            _newMorphValue = aba && _currentMorphValue > 0.1f
+            _targetValue = resetUsedExpressionsAtLoop && _currentValue > 0.1f
                 ? 0f
                 : Utils.RoundToDecimals(Random.Range(min, max) * multi);
         }
 
         public void UpdateInitialValue()
         {
-            _initialMorphValue = Utils.RoundToDecimals(_morph.morphValue);
+            _initialValue = Utils.RoundToDecimals(_morph.morphValue);
         }
 
-        public bool SmoothResetMorphValue(float interpolant)
+        public float SmoothResetTimer { get; set; }
+
+        public bool SmoothResetValue(float interpolant)
         {
-            _currentMorphValue = Utils.RoundToDecimals(Mathf.Lerp(_currentMorphValue, _initialMorphValue, interpolant));
-            bool finished = Mathf.Abs(_currentMorphValue - _initialMorphValue) < 0.001f;
+            SmoothResetTimer += Time.deltaTime;
+            _currentValue = Utils.RoundToDecimals(Mathf.Lerp(_currentValue, _initialValue, interpolant));
+            bool finished = Mathf.Abs(_currentValue - _initialValue) < 0.001f;
             if(finished)
             {
-                _currentMorphValue = _initialMorphValue;
+                _currentValue = _initialValue;
             }
 
-            _morph.morphValue = _currentMorphValue;
+            _morph.morphValue = _currentValue;
             return finished;
         }
 
         public void ResetToInitial()
         {
-            _currentMorphValue = _initialMorphValue;
-            _morph.morphValue = _currentMorphValue;
+            _currentValue = _initialValue;
+            _morph.morphValue = _currentValue;
         }
 
         public void ZeroValue()
         {
-            _morph.morphValue = 0f;
+            _currentValue = 0f;
+            _initialValue = _currentValue;
+            _morph.morphValue = _currentValue;
         }
     }
 }

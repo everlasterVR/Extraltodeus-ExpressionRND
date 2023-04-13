@@ -90,8 +90,7 @@ namespace extraltodeus
             "Expressions",
         };
 
-        // particular morph names to add
-        readonly string[] _tailorList =
+        readonly string[] _includeMorphNames =
         {
             "Pupils Dialate",
             "Eye Roll Back_DD",
@@ -309,7 +308,7 @@ namespace extraltodeus
                     !morph.hasBoneRotationFormulas &&
                     _poseRegions.Any(morph.region.Contains) &&
                     !_excludeRegions.Any(morph.region.Contains) ||
-                    _tailorList.Any(morph.displayName.Contains)
+                    _includeMorphNames.Any(morph.displayName.Contains)
                 )
                 {
                     var morphModel = new MorphModel(morph, morph.displayName, morph.region);
@@ -333,7 +332,12 @@ namespace extraltodeus
             _triggerTransitionsManuallyJsb = NewStorableBool(Name.TRIGGER_TRANSITIONS_MANUALLY, false, false);
             _randomChancesForTransitionsJsb = NewStorableBool(Name.RANDOM_CHANCES_FOR_TRANSITIONS, true, false);
             _chanceToTriggerJsf = NewStorableFloat(Name.CHANCE_TO_TRIGGER, 75f, 0f, 100f, false);
-            _triggerTransitionAction = NewStorableAction(Name.TRIGGER_TRANSITION, SetNewRandomMorphValues);
+
+            _masterSpeedJsf.setCallbackFunction = value => _timeout = _loopLengthJsf.val / value;
+            _loopLengthJsf.setCallbackFunction = value => _timeout = value / _masterSpeedJsf.val;
+            _timeout = _loopLengthJsf.val / _masterSpeedJsf.val;
+
+            _triggerTransitionAction = NewStorableAction(Name.TRIGGER_TRANSITION, NewRandomTargetMorphValues);
             _loadIdlePresetAction = NewStorableAction(Name.LOAD_IDLE_PRESET, () =>
             {
                 base.RestoreFromJSON(_builtInPresetJSONs[Name.IDLE]);
@@ -870,7 +874,6 @@ namespace extraltodeus
                     if(morphModel.EnabledJsb.val)
                     {
                         morphModel.ZeroValue();
-                        morphModel.UpdateInitialValue();
                     }
                 }
             });
@@ -1283,6 +1286,7 @@ namespace extraltodeus
         bool _globalAnimationFrozen;
         bool SkipUpdate => !_play || _globalAnimationFrozen || !enabled || _savingScene || initialized != true || _restoringFromJson;
         float _timer;
+        float _timeout;
 
         void Update()
         {
@@ -1295,14 +1299,17 @@ namespace extraltodeus
             try
             {
                 _timer += Time.deltaTime;
-                if(_timer >= _loopLengthJsf.val / _masterSpeedJsf.val)
+                if(_timer >= _timeout)
                 {
                     _timer = 0f;
                     if(!_triggerTransitionsManuallyJsb.val)
                     {
-                        SetNewRandomMorphValues();
+                        NewRandomTargetMorphValues();
                     }
                 }
+
+                UpdateMorphs(_timer);
+                ResetAwaitingMorphs();
             }
             catch(Exception e)
             {
@@ -1311,51 +1318,52 @@ namespace extraltodeus
             }
         }
 
-        void SetNewRandomMorphValues()
+        void ResetAwaitingMorphs()
+        {
+            int awaitingResetCount = _awaitingResetMorphs.Count;
+            if(awaitingResetCount > 0)
+            {
+                for(int i = awaitingResetCount - 1; i >= 0; i--)
+                {
+                    var morphModel = _awaitingResetMorphs[i];
+                    morphModel.SmoothResetTimer += Time.deltaTime;
+                    if(morphModel.SmoothResetTimer >= _timeout)
+                    {
+                        morphModel.SmoothResetTimer = 0f;
+                    }
+
+                    float resetInterpolant = _smoothJsb.val
+                        ? SmoothInterpolant(_morphingSpeedJsf.val, _masterSpeedJsf.val, morphModel.SmoothResetTimer, _loopLengthJsf.val)
+                        : LinearInterpolant(_morphingSpeedJsf.val, _masterSpeedJsf.val);
+                    bool finished = morphModel.SmoothResetValue(resetInterpolant);
+                    if(finished)
+                    {
+                        _awaitingResetMorphs.RemoveAt(i);
+                    }
+                }
+            }
+        }
+
+        void NewRandomTargetMorphValues()
         {
             foreach(var morphModel in _enabledMorphs)
             {
                 if(!_randomChancesForTransitionsJsb.val || UnityEngine.Random.Range(0f, 100f) <= _chanceToTriggerJsf.val)
                 {
-                    morphModel.SetNewMorphValue(_minJsf.val, _maxJsf.val, _multiJsf.val, _resetUsedExpressionsAtLoopJsb.val);
+                    morphModel.SetTargetValue(_minJsf.val, _maxJsf.val, _multiJsf.val, _resetUsedExpressionsAtLoopJsb.val);
                 }
             }
         }
 
-        void FixedUpdate()
+        void UpdateMorphs(float timer)
         {
-            if(SkipUpdate)
-            {
-                return;
-            }
+            float interpolant = _smoothJsb.val
+                ? SmoothInterpolant(_morphingSpeedJsf.val, _masterSpeedJsf.val, timer, _loopLengthJsf.val)
+                : LinearInterpolant(_morphingSpeedJsf.val, _masterSpeedJsf.val);
 
-            try
+            foreach(var morphModel in _enabledMorphs)
             {
-                float interpolant = _smoothJsb.val
-                    ? SmoothInterpolant(_morphingSpeedJsf.val, _masterSpeedJsf.val, _timer, _loopLengthJsf.val)
-                    : LinearInterpolant(_morphingSpeedJsf.val, _masterSpeedJsf.val);
-                foreach(var morphModel in _enabledMorphs)
-                {
-                    morphModel.CalculateMorphValue(interpolant);
-                }
-
-                int awaitingResetCount = _awaitingResetMorphs.Count;
-                if(awaitingResetCount > 0)
-                {
-                    for(int i = awaitingResetCount - 1; i >= 0; i--)
-                    {
-                        var morphModel = _awaitingResetMorphs[i];
-                        if(morphModel.SmoothResetMorphValue(interpolant))
-                        {
-                            _awaitingResetMorphs.RemoveAt(i);
-                        }
-                    }
-                }
-            }
-            catch(Exception e)
-            {
-                Loggr.Message($"{nameof(FixedUpdate)} error: {e}");
-                enabled = false;
+                morphModel.CalculateValue(interpolant);
             }
         }
 
