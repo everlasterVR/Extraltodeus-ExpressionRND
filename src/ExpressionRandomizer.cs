@@ -387,16 +387,18 @@ namespace extraltodeus
                 {
                     _triggerTransitionsManuallyJsb.val = true;
                     _randomChancesForTransitionsJsb.val = true;
+                    EnsureTriggerActionExists(val);
                 }
                 else
                 {
-                    ClearOtherTriggers();
+                    ClearOtherTriggerActions();
                 }
             };
-            if(_collisionTriggerJssc.val != "None")
+            if(_collisionTriggerJssc.val != COLLISION_TRIGGER_DEFAULT_VAL)
             {
                 _triggerTransitionsManuallyJsb.val = true;
                 _randomChancesForTransitionsJsb.val = true;
+                EnsureTriggerActionExists(_collisionTriggerJssc.val);
             }
 
             _useAndFilterJsb = new JSONStorableBool("AND filter", false)
@@ -464,80 +466,9 @@ namespace extraltodeus
                 base.RestoreFromJSON(_presetJSONs[Name.IDLE]);
             }
 
-            InvokeRepeating(nameof(TriggerMaintainer), 3f, 3f); // To check if the selected collision trigger is still there every 3 seconds
             SuperController.singleton.onBeforeSceneSaveHandlers += OnBeforeSceneSave;
             SuperController.singleton.onSceneSavedHandlers += OnSceneSaved;
             initialized = true;
-        }
-
-        void TriggerMaintainer()
-        {
-            if(!enabled)
-            {
-                return;
-            }
-
-            if(_collisionTriggerJssc.val != COLLISION_TRIGGER_DEFAULT_VAL)
-            {
-                CreateTrigger(_collisionTriggerJssc.val);
-                ClearOtherTriggers();
-            }
-        }
-
-        void CreateTrigger(string triggerName)
-        {
-            var collisionTrigger = _person.GetCollisionTrigger(triggerName);
-            if(!CheckIfTriggerExists(collisionTrigger))
-            {
-                if(collisionTrigger)
-                {
-                    collisionTrigger.enabled = true;
-                    var startTrigger = collisionTrigger.trigger.CreateDiscreteActionStartInternal();
-                    startTrigger.name = Name.EXP_RAND_TRIGGER;
-                    startTrigger.receiverAtom = _person.Atom;
-                    startTrigger.receiver = this;
-                    startTrigger.receiverTargetName = _triggerTransitionAction.name;
-                }
-            }
-        }
-
-        void ClearOtherTriggers()
-        {
-            foreach(string triggerName in _collisionTriggerJssc.choices)
-            {
-                if(triggerName != _collisionTriggerJssc.val)
-                {
-                    ClearTriggers(triggerName);
-                }
-            }
-        }
-
-        void ClearTriggers(string triggerName)
-        {
-            if(triggerName == COLLISION_TRIGGER_DEFAULT_VAL || _person.Exists())
-            {
-                return;
-            }
-
-            var collisionTrigger = _person.GetCollisionTrigger(triggerName);
-            if(collisionTrigger)
-            {
-                var triggerJSON = collisionTrigger.trigger.GetJSON();
-                var startActions = triggerJSON["startActions"].AsArray;
-                for(int i = 0; i < startActions.Count; i++)
-                {
-                    if(startActions[i]["name"].Value == Name.EXP_RAND_TRIGGER)
-                    {
-                        startActions.Remove(i);
-                    }
-                }
-
-                collisionTrigger.trigger.RestoreFromJSON(triggerJSON);
-            }
-            else
-            {
-                Loggr.Message($"{nameof(ClearTriggers)} error: Couldn't find trigger " + triggerName);
-            }
         }
 
         readonly Dictionary<string, UIDynamicButton> _presetButtons = new Dictionary<string, UIDynamicButton>();
@@ -1255,15 +1186,19 @@ namespace extraltodeus
         }
 
         bool _play;
-        bool _globalAnimationFrozen;
-        bool SkipUpdate => !_play || _globalAnimationFrozen || !enabled || _savingScene || initialized != true || _restoringFromJson;
         float _timer;
         float _timeout;
 
         void Update()
         {
-            _globalAnimationFrozen = Utils.GlobalAnimationFrozen();
-            if(SkipUpdate)
+            if(!enabled || _savingScene || initialized != true || _restoringFromJson)
+            {
+                return;
+            }
+
+            RunChecks();
+
+            if(!_play || Utils.GlobalAnimationFrozen())
             {
                 return;
             }
@@ -1283,6 +1218,7 @@ namespace extraltodeus
                 _timer += deltaTime;
                 UpdateMorphs(_timer, deltaTime);
                 ResetAwaitingMorphs(deltaTime);
+
             }
             catch(Exception e)
             {
@@ -1291,32 +1227,117 @@ namespace extraltodeus
             }
         }
 
-        void ResetAwaitingMorphs(float deltaTime)
+        float _checkTimer;
+
+        void RunChecks()
         {
-            if(_awaitingResetMorphs.Count <= 0)
+            if(!enabled)
             {
                 return;
             }
 
-            for(int i = _awaitingResetMorphs.Count - 1; i >= 0; i--)
+            _checkTimer += Time.deltaTime;
+            if(_checkTimer > 3f)
             {
-                var morphModel = _awaitingResetMorphs[i];
-                if(morphModel.SmoothResetTimer >= _timeout)
+                _checkTimer = 0f;
+                if(_collisionTriggerJssc.val != COLLISION_TRIGGER_DEFAULT_VAL)
                 {
-                    morphModel.SmoothResetTimer = 0f;
+                    EnsureTriggerActionExists(_collisionTriggerJssc.val);
+                    ClearOtherTriggerActions();
                 }
 
-                morphModel.SmoothResetTimer += deltaTime;
-
-                float resetInterpolant = _smoothJsb.val
-                    ? SmoothInterpolant(deltaTime, _morphingSpeedJsf.val, _masterSpeedJsf.val, morphModel.SmoothResetTimer, _loopLengthJsf.val)
-                    : LinearInterpolant(deltaTime, _morphingSpeedJsf.val, _masterSpeedJsf.val, _loopLengthJsf.val);
-                bool finished = morphModel.SmoothResetValue(resetInterpolant);
-                if(finished)
+                if(_person.GenderChanged())
                 {
-                    _awaitingResetMorphs.RemoveAt(i);
+                    Loggr.Message("Gender changed - reload the plugin (opposite gender morphs are loaded).");
+                    enabled = false;
+                    StartCoroutine(WaitForGenderRestored());
                 }
             }
+        }
+
+        void EnsureTriggerActionExists(string triggerName)
+        {
+            var collisionTrigger = _person.GetCollisionTrigger(triggerName);
+            if(!collisionTrigger || collisionTrigger.trigger == null)
+            {
+                return;
+            }
+
+            collisionTrigger.enabled = true;
+            if(!TriggerActionExists(collisionTrigger))
+            {
+                var startTrigger = collisionTrigger.trigger.CreateDiscreteActionStartInternal();
+                startTrigger.name = Name.EXP_RAND_TRIGGER;
+                startTrigger.receiverAtom = _person.Atom;
+                startTrigger.receiver = this;
+                startTrigger.receiverTargetName = _triggerTransitionAction.name;
+            }
+        }
+
+        static bool TriggerActionExists(CollisionTrigger collisionTrigger)
+        {
+            JSONNode presentTriggers = collisionTrigger.trigger.GetJSON();
+            var asArray = presentTriggers["startActions"].AsArray;
+            for(int i = 0; i < asArray.Count; i++)
+            {
+                var asObject = asArray[i].AsObject;
+                string name = asObject["name"];
+                if(name == Name.EXP_RAND_TRIGGER && asObject["receiver"] != null)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        void ClearOtherTriggerActions()
+        {
+            foreach(string triggerName in _collisionTriggerJssc.choices)
+            {
+                if(triggerName != _collisionTriggerJssc.val)
+                {
+                    ClearTriggers(triggerName);
+                }
+            }
+        }
+
+        void ClearTriggers(string triggerName)
+        {
+            if(triggerName == COLLISION_TRIGGER_DEFAULT_VAL || _person.Exists())
+            {
+                return;
+            }
+
+            var collisionTrigger = _person.GetCollisionTrigger(triggerName);
+            if(collisionTrigger)
+            {
+                var triggerJSON = collisionTrigger.trigger.GetJSON();
+                var startActions = triggerJSON["startActions"].AsArray;
+                for(int i = 0; i < startActions.Count; i++)
+                {
+                    if(startActions[i]["name"].Value == Name.EXP_RAND_TRIGGER)
+                    {
+                        startActions.Remove(i);
+                    }
+                }
+
+                collisionTrigger.trigger.RestoreFromJSON(triggerJSON);
+            }
+            else
+            {
+                Loggr.Message($"{nameof(ClearTriggers)} error: Couldn't find trigger " + triggerName);
+            }
+        }
+
+        IEnumerator WaitForGenderRestored()
+        {
+            while(!_person.GenderChanged())
+            {
+                yield return null;
+            }
+
+            enabled = true;
         }
 
         void NewRandomTargetMorphValues()
@@ -1355,26 +1376,32 @@ namespace extraltodeus
             return deltaTime * morphingSpeed * masterSpeed / (loopLength * 30);
         }
 
-        static bool CheckIfTriggerExists(CollisionTrigger trig)
+        void ResetAwaitingMorphs(float deltaTime)
         {
-            if(!trig || trig.trigger == null)
+            if(_awaitingResetMorphs.Count <= 0)
             {
-                return false;
+                return;
             }
 
-            JSONNode presentTriggers = trig.trigger.GetJSON();
-            var asArray = presentTriggers["startActions"].AsArray;
-            for(int i = 0; i < asArray.Count; i++)
+            for(int i = _awaitingResetMorphs.Count - 1; i >= 0; i--)
             {
-                var asObject = asArray[i].AsObject;
-                string name = asObject["name"];
-                if(name == Name.EXP_RAND_TRIGGER && asObject["receiver"] != null)
+                var morphModel = _awaitingResetMorphs[i];
+                if(morphModel.SmoothResetTimer >= _timeout)
                 {
-                    return true;
+                    morphModel.SmoothResetTimer = 0f;
+                }
+
+                morphModel.SmoothResetTimer += deltaTime;
+
+                float resetInterpolant = _smoothJsb.val
+                    ? SmoothInterpolant(deltaTime, _morphingSpeedJsf.val, _masterSpeedJsf.val, morphModel.SmoothResetTimer, _loopLengthJsf.val)
+                    : LinearInterpolant(deltaTime, _morphingSpeedJsf.val, _masterSpeedJsf.val, _loopLengthJsf.val);
+                bool finished = morphModel.SmoothResetValue(resetInterpolant);
+                if(finished)
+                {
+                    _awaitingResetMorphs.RemoveAt(i);
                 }
             }
-
-            return false;
         }
 
         void ResetActiveMorphs()
@@ -1515,11 +1542,6 @@ namespace extraltodeus
                 Name.PRESET_2,
             };
 
-            // string[] comparisonKeys =
-            // {
-            //
-            // }
-
             var jcKeys = jc.Keys.ToList();
             jcKeys.RemoveAll(nonComparisonKeys.Contains);
             jcKeys.Sort();
@@ -1624,7 +1646,7 @@ namespace extraltodeus
                 base.OnDestroy();
                 Destroy(_colliderTriggerPopupListener);
                 ClearTriggers(_collisionTriggerJssc.val);
-                ClearOtherTriggers();
+                ClearOtherTriggerActions();
                 SuperController.singleton.onSceneSavedHandlers -= OnSceneSaved;
                 SuperController.singleton.onBeforeSceneSaveHandlers -= OnBeforeSceneSave;
             }

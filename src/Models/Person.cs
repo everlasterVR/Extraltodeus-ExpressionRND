@@ -8,16 +8,29 @@ namespace ExpressionRND.Models
         public Atom Atom { get; }
         readonly DAZCharacterSelector _geometry;
         readonly GenerateDAZMorphsControlUI _morphsControlUI;
+        // readonly GenerateDAZMorphsControlUI _morphsControlUIOtherGender;
+        DAZCharacter _selectedCharacter;
 
-        public bool isFemale { get; }
+        // TODO male & use other gender morphs support
+        // readonly JSONStorableBool _useMaleMorphsOnFemaleJsb;
+        // readonly JSONStorableBool _useFemaleMorphsOnMaleJsb;
+
+        // public bool isFemale { get; }
 
         public Person(Atom atom)
         {
             Atom = atom;
-            _geometry = (DAZCharacterSelector) this.Atom.GetStorableByID("geometry");
+            _geometry = (DAZCharacterSelector) Atom.GetStorableByID("geometry");
             _morphsControlUI = _geometry.morphsControlUI;
+            _selectedCharacter = _geometry.selectedCharacter;
 
-            isFemale = !_geometry.selectedCharacter.isMale;
+            // _useMaleMorphsOnFemaleJsb = _geometry.GetBoolJSONParam("useMaleMorphsOnFemale");
+            // _useFemaleMorphsOnMaleJsb = _geometry.GetBoolJSONParam("useFemaleMorphsOnMale");
+
+            // _useMaleMorphsOnFemaleJsb.setCallbackFunction += RefreshMorphs;
+            // _useFemaleMorphsOnMaleJsb.setCallbackFunction += RefreshMorphs;
+
+            // isFemale = !_geometry.selectedCharacter.isMale;
             Atom.GetStorableByID("AutoExpressions").SetBoolParamValue("enabled", false);
         }
 
@@ -34,7 +47,20 @@ namespace ExpressionRND.Models
 
         public bool Exists()
         {
-            return Atom != null && Atom.gameObject;
+            return Atom && Atom.gameObject;
         }
+
+        public bool GenderChanged()
+        {
+            bool changed = _selectedCharacter != _geometry.selectedCharacter;
+            _selectedCharacter = _geometry.selectedCharacter;
+            return changed;
+        }
+
+        // public void Destroy()
+        // {
+        //     _useMaleMorphsOnFemaleJsb.setCallbackFunction -= RefreshMorphs;
+        //     _useFemaleMorphsOnMaleJsb.setCallbackFunction -= RefreshMorphs;
+        // }
     }
 }
