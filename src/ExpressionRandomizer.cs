@@ -434,8 +434,16 @@ namespace extraltodeus
                 {
                     if(on)
                     {
-                        morphModel.UpdateInitialValue();
-                        _awaitingResetMorphs.Remove(morphModel);
+                        if(_awaitingResetMorphs.Contains(morphModel))
+                        {
+                            _awaitingResetMorphs.Remove(morphModel);
+                            /* Previously defined initial value is still valid */
+                        }
+                        else
+                        {
+                            morphModel.UpdateInitialValue();
+                        }
+
                         _enabledMorphs.Add(morphModel);
                     }
                     else
@@ -1027,7 +1035,7 @@ namespace extraltodeus
                         () =>
                         {
                             uiPopup.visible = false;
-                            uiPopup.SelectPrevious();
+                            uiPopup.SetPreviousValue();
                         }
                     );
                 var prevBtnRect = btn.GetComponent<RectTransform>();
@@ -1049,7 +1057,7 @@ namespace extraltodeus
                         () =>
                         {
                             uiPopup.visible = false;
-                            uiPopup.SelectNext();
+                            uiPopup.SetNextValue();
                         }
                     );
                 var prevBtnRect = btn.GetComponent<RectTransform>();
