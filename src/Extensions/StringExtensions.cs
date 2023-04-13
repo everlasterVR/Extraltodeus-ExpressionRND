@@ -1,5 +1,4 @@
 ﻿// ReSharper disable MemberCanBePrivate.Global UnusedMember.Global UnusedMethodReturnValue.Global UnusedType.Global
-using System;
 using UnityEngine;
 
 static class StringExtensions

@@ -13,6 +13,7 @@ namespace extraltodeus
 {
     sealed class ExpressionRandomizer : ScriptBase
     {
+        [SuppressMessage("ReSharper", "UnusedMember.Local")]
         const string VERSION = "0.0.0";
         const string COLLISION_TRIGGER_DEFAULT_VAL = "None";
         const string FILTER_DEFAULT_VAL = "Filter morphs...";
@@ -615,17 +616,17 @@ namespace extraltodeus
             CreateSlider(_maxJsf);
             CreateSlider(_multiJsf);
             CreateSlider(_masterSpeedJsf);
-            CreateSpacer().height = 106;
-            var toggle = CreateCustomToggle(_playJsb, new Vector2(10, -721), -285);
+            CreateSpacer().height = 106f;
+            var toggle = CreateCustomToggle(_playJsb, new Vector2(10f, -721f), -285);
             toggle.toggle.onValueChanged.AddListener(val => toggle.textColor = val ? Color.black : Colors.darkRed);
             CreateCustomToggle(_smoothJsb, new Vector2(280, -721), -285);
 
             _triggerTransitionButton = CreateCustomButton("Trigger transition", new Vector2(279, -786), new Vector2(-824, 52));
             _triggerTransitionAction.RegisterButton(_triggerTransitionButton);
-            _triggerTransitionsManuallyToggle = CreateCustomToggle(_triggerTransitionsManuallyJsb, new Vector2(10, -786), -285, false);
+            _triggerTransitionsManuallyToggle = CreateCustomToggle(_triggerTransitionsManuallyJsb, new Vector2(10, -786), -285);
             _triggerTransitionsManuallyToggle.label = "Manual mode";
 
-            CreateSpacer().height = 63;
+            CreateSpacer().height = 63f;
             CreateAdditionalOptionsUI();
             CreateMoreAdditionalOptionsUI();
             SelectOptionsUI(false);
@@ -843,8 +844,8 @@ namespace extraltodeus
                 textField.backgroundColor = Color.clear;
                 textField.text = "\n".Size(8) + jss.val;
                 var layout = textField.GetComponent<LayoutElement>();
-                layout.preferredHeight = 50;
-                layout.minHeight = 50;
+                layout.preferredHeight = 50f;
+                layout.minHeight = 50f;
             }
 
             var selectNoneButton = CreateCustomButton("Select none", new Vector2(717, -65), new Vector2(-920, 52));
@@ -876,9 +877,9 @@ namespace extraltodeus
 
             _regionPopup = CreateRegionPopup();
 
-            CreateSpacer(true).height = 42;
-            CreateCustomToggle(_useAndFilterJsb, new Vector2(10, -252), -285, true);
-            CreateCustomToggle(_onlyShowActiveJsb, new Vector2(280, -252), -285, true);
+            CreateSpacer(true).height = 42f;
+            CreateCustomToggle(_useAndFilterJsb, new Vector2(10f, -252f), -285f, true);
+            CreateCustomToggle(_onlyShowActiveJsb, new Vector2(280f, -252f), -285f, true);
 
             _filterInputField = CreateFilterInputField();
             _filterInputField.onValueChanged.AddListener(value =>
@@ -965,7 +966,7 @@ namespace extraltodeus
             _nextPageButton.button.interactable = false;
         }
 
-        UIDynamicToggle CreateCustomToggle(JSONStorableBool jsb, Vector2 pos, int sizeX, bool rightSide = false, bool callbacks = false)
+        UIDynamicToggle CreateCustomToggle(JSONStorableBool jsb, Vector2 pos, float sizeX, bool rightSide = false, bool callbacks = false)
         {
             var t = InstantiateToContent(manager.configurableTogglePrefab, rightSide);
             t.GetComponent<LayoutElement>().ignoreLayout = true;
@@ -1129,8 +1130,8 @@ namespace extraltodeus
             var filterTextJss = new JSONStorableString("FilterText", FILTER_DEFAULT_VAL);
             var filterTextField = CreateTextField(filterTextJss, true);
             var tfLayout = filterTextField.GetComponent<LayoutElement>();
-            tfLayout.preferredHeight = tfLayout.minHeight = 53;
-            filterTextField.height = 53;
+            tfLayout.preferredHeight = tfLayout.minHeight = 53f;
+            filterTextField.height = 53f;
             filterTextField.DisableScrollOnText();
             _filterInputField = filterTextField.gameObject.AddComponent<InputField>();
             _filterInputField.textComponent = filterTextField.UItext;
@@ -1253,7 +1254,7 @@ namespace extraltodeus
                     morphToggle.label = _regionJssc.val == "All" ? morphModel.Label : morphModel.DisplayName;
                     morphModel.EnabledJsb.toggle = morphToggle.toggle;
                     morphToggle.toggle.isOn = morphModel.EnabledJsb.val;
-                    morphToggle.toggle.onValueChanged.AddListener((val) => morphModel.EnabledJsb.val = val);
+                    morphToggle.toggle.onValueChanged.AddListener(val => morphModel.EnabledJsb.val = val);
                 }
                 else
                 {
@@ -1296,7 +1297,7 @@ namespace extraltodeus
                 _timer += Time.deltaTime;
                 if(_timer >= _loopLengthJsf.val / _masterSpeedJsf.val)
                 {
-                    _timer = 0;
+                    _timer = 0f;
                     if(!_triggerTransitionsManuallyJsb.val)
                     {
                         SetNewRandomMorphValues();
@@ -1636,6 +1637,7 @@ namespace extraltodeus
         readonly JSONStorableFloat _sizeX = new JSONStorableFloat("sizeX", 0, -1200, 1000);
         readonly JSONStorableFloat _sizeY = new JSONStorableFloat("sizeY", 0, -1000, 1000);
 
+        [SuppressMessage("ReSharper", "UnusedMember.Local")]
         void CreateDevSliders()
         {
             _morphModels.Clear();

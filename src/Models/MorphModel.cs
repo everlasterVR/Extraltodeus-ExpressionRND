@@ -45,7 +45,7 @@ namespace ExpressionRND.Models
         public void SetNewMorphValue(float min, float max, float multi, bool aba)
         {
             _newMorphValue = aba && _currentMorphValue > 0.1f
-                ? 0
+                ? 0f
                 : Utils.RoundToDecimals(Random.Range(min, max) * multi);
         }
 
@@ -75,7 +75,7 @@ namespace ExpressionRND.Models
 
         public void ZeroValue()
         {
-            _morph.morphValue = 0;
+            _morph.morphValue = 0f;
         }
     }
 }
