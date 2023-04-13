@@ -320,7 +320,7 @@ namespace extraltodeus
             _minJsf = NewStorableFloat(Name.MINIMUM_VALUE, -0.15f, -1f, 1.0f);
             _maxJsf = NewStorableFloat(Name.MAXIMUM_VALUE, 0.35f, -1f, 1.0f);
             _multiJsf = NewStorableFloat(Name.MULTIPLIER, 1f, 0f, 2f);
-            _masterSpeedJsf = NewStorableFloat(Name.MASTER_SPEED, 1f, 0f, 10f);
+            _masterSpeedJsf = NewStorableFloat(Name.MASTER_SPEED, 1f, 0.1f, 10f);
             _playJsb = NewStorableBool(Name.PLAY, true);
             _playJsb.setCallbackFunction = value => _play = value;
             _play = _playJsb.val;
@@ -749,6 +749,7 @@ namespace extraltodeus
             _moreButton.buttonText.fontSize = 26;
 
             _loopLengthSlider = CreateSlider(_loopLengthJsf);
+            _loopLengthSlider.label = $"{Name.LOOP_LENGTH} (s)";
             _morphingSpeedSlider = CreateSlider(_morphingSpeedJsf);
             _abaToggle = CreateToggle(_resetUsedExpressionsAtLoopJsb);
         }
@@ -763,6 +764,7 @@ namespace extraltodeus
 
             _randomToggle = CreateToggle(_randomChancesForTransitionsJsb);
             _triggerChanceSlider = CreateSlider(_chanceToTriggerJsf);
+            _triggerChanceSlider.label = $"{Name.CHANCE_TO_TRIGGER} (%)";
             _triggerChanceSlider.valueFormat = "F0";
 
             _collisionTriggerPopup = CreateCollisionTriggerPopup();
