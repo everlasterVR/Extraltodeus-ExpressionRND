@@ -198,8 +198,7 @@ namespace extraltodeus
 
         string _presetSetOnInit;
         bool _restoringFromJson;
-        Atom _person;
-        GenerateDAZMorphsControlUI _morphsControlUI;
+        Person _person;
         List<MorphModel> _enabledMorphs;
         List<MorphModel> _awaitingResetMorphs;
         readonly List<MorphModel> _morphModels = new List<MorphModel>();
@@ -294,16 +293,11 @@ namespace extraltodeus
                 yield return null;
             }
 
-            _person = containingAtom;
-            _person.GetStorableByID("AutoExpressions").SetBoolParamValue("enabled", false);
-            var geometry = (DAZCharacterSelector) _person.GetStorableByID("geometry");
-            _morphsControlUI = geometry.morphsControlUI;
+            _person = new Person(containingAtom);
 
-            foreach(var morph in _morphsControlUI.GetMorphs())
+            foreach(var morph in _person.GetNonBoneMorphs())
             {
                 if(
-                    !morph.hasBoneModificationFormulas &&
-                    !morph.hasBoneRotationFormulas &&
                     _poseRegions.Any(morph.region.Contains) &&
                     !_excludeMorphNames.Any(morph.displayName.Contains) &&
                     !_excludeRegions.Any(morph.region.Contains) ||
@@ -492,7 +486,7 @@ namespace extraltodeus
 
         void CreateTrigger(string triggerName)
         {
-            var collisionTrigger = _person.GetStorableByID(triggerName) as CollisionTrigger;
+            var collisionTrigger = _person.GetCollisionTrigger(triggerName);
             if(!CheckIfTriggerExists(collisionTrigger))
             {
                 if(collisionTrigger)
@@ -500,7 +494,7 @@ namespace extraltodeus
                     collisionTrigger.enabled = true;
                     var startTrigger = collisionTrigger.trigger.CreateDiscreteActionStartInternal();
                     startTrigger.name = Name.EXP_RAND_TRIGGER;
-                    startTrigger.receiverAtom = _person;
+                    startTrigger.receiverAtom = _person.Atom;
                     startTrigger.receiver = this;
                     startTrigger.receiverTargetName = _triggerTransitionAction.name;
                 }
@@ -520,12 +514,12 @@ namespace extraltodeus
 
         void ClearTriggers(string triggerName)
         {
-            if(triggerName == COLLISION_TRIGGER_DEFAULT_VAL || _person == null || !_person.gameObject)
+            if(triggerName == COLLISION_TRIGGER_DEFAULT_VAL || _person.Exists())
             {
                 return;
             }
 
-            var collisionTrigger = _person.GetStorableByID(triggerName) as CollisionTrigger;
+            var collisionTrigger = _person.GetCollisionTrigger(triggerName);
             if(collisionTrigger)
             {
                 var triggerJSON = collisionTrigger.trigger.GetJSON();
@@ -1363,6 +1357,11 @@ namespace extraltodeus
 
         static bool CheckIfTriggerExists(CollisionTrigger trig)
         {
+            if(!trig || trig.trigger == null)
+            {
+                return false;
+            }
+
             JSONNode presentTriggers = trig.trigger.GetJSON();
             var asArray = presentTriggers["startActions"].AsArray;
             for(int i = 0; i < asArray.Count; i++)
