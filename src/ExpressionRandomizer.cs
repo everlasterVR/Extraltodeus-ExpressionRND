@@ -170,17 +170,18 @@ namespace extraltodeus
                     [Name.RESET_USED_EXPRESSIONS_AT_LOOP] = { AsBool = true },
                     [Name.TRIGGER_TRANSITIONS_MANUALLY] = { AsBool = false },
                     [Name.RANDOM_CHANCES_FOR_TRANSITIONS] = { AsBool = true },
-                    [Name.CHANCE_TO_TRIGGER] = { AsFloat = 75f },
+                    [Name.CHANCE_TO_TRIGGER] = { AsFloat = 60f },
                     [Name.MINIMUM_VALUE] = { AsFloat = 0.07f },
                     [Name.MAXIMUM_VALUE] = { AsFloat = 0.36f },
                     [Name.MULTIPLIER] = { AsFloat = 1.00f },
-                    [Name.MASTER_SPEED] = { AsFloat = 2.50f },
+                    [Name.MASTER_SPEED] = { AsFloat = 3.00f },
                     [Name.LOOP_LENGTH] = { AsFloat = 6.00f },
-                    [Name.MORPHING_SPEED] = { AsFloat = 2.50f },
+                    [Name.MORPHING_SPEED] = { AsFloat = 1.60f },
                     /* Enabled morphs */
                     ["Brow/Brow Inner Up Left"] = { AsBool = true },
                     ["Brow/Brow Inner Up Right"] = { AsBool = true },
                     ["Cheeks and Jaw/Jaw In-Out"] = { AsBool = true },
+                    ["Expressions/Frown"] = { AsBool = true },
                     ["Expressions/Happy"] = { AsBool = true },
                     ["Expressions/Shock"] = { AsBool = true },
                     ["Expressions/Surprise"] = { AsBool = true },
@@ -1218,7 +1219,6 @@ namespace extraltodeus
                 _timer += deltaTime;
                 UpdateMorphs(_timer, deltaTime);
                 ResetAwaitingMorphs(deltaTime);
-
             }
             catch(Exception e)
             {
@@ -1304,7 +1304,7 @@ namespace extraltodeus
 
         void ClearTriggers(string triggerName)
         {
-            if(triggerName == COLLISION_TRIGGER_DEFAULT_VAL || _person.Exists())
+            if(triggerName == COLLISION_TRIGGER_DEFAULT_VAL || !_person.Exists())
             {
                 return;
             }
@@ -1323,10 +1323,6 @@ namespace extraltodeus
                 }
 
                 collisionTrigger.trigger.RestoreFromJSON(triggerJSON);
-            }
-            else
-            {
-                Loggr.Message($"{nameof(ClearTriggers)} error: Couldn't find trigger " + triggerName);
             }
         }
 
