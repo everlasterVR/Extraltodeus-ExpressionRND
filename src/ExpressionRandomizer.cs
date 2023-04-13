@@ -1302,7 +1302,6 @@ namespace extraltodeus
             try
             {
                 float deltaTime = Time.deltaTime;
-                _timer += deltaTime;
                 if(_timer >= _timeout)
                 {
                     _timer = 0f;
@@ -1312,6 +1311,7 @@ namespace extraltodeus
                     }
                 }
 
+                _timer += deltaTime;
                 UpdateMorphs(_timer, deltaTime);
                 ResetAwaitingMorphs(deltaTime);
             }
@@ -1332,11 +1332,12 @@ namespace extraltodeus
             for(int i = _awaitingResetMorphs.Count - 1; i >= 0; i--)
             {
                 var morphModel = _awaitingResetMorphs[i];
-                morphModel.SmoothResetTimer += deltaTime;
                 if(morphModel.SmoothResetTimer >= _timeout)
                 {
                     morphModel.SmoothResetTimer = 0f;
                 }
+
+                morphModel.SmoothResetTimer += deltaTime;
 
                 float resetInterpolant = _smoothJsb.val
                     ? SmoothInterpolant(deltaTime, _morphingSpeedJsf.val, _masterSpeedJsf.val, morphModel.SmoothResetTimer, _loopLengthJsf.val)
