@@ -88,6 +88,7 @@
     <Compile Include="src\Extensions\UIPopupExtensions.cs" />
     <Compile Include="src\Models\MorphModel.cs" />
     <Compile Include="src\ScriptBase.cs" />
+    <Compile Include="src\Static\Name.cs" />
     <Compile Include="src\Utils\Colors.cs" />
     <Compile Include="src\Utils\FileUtils.cs" />
     <Compile Include="src\Utils\Loggr.cs" />

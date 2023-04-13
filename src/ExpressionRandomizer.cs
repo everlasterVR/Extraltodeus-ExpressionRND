@@ -11,30 +11,9 @@ using UnityEngine.UI;
 
 namespace extraltodeus
 {
-    static class Name
-    {
-        public const string CHANCE_TO_TRIGGER = "Chance to trigger";
-        public const string COLLISION_TRIGGER = "Collision trigger";
-        public const string ENJOY = "Enjoy";
-        public const string FLIRT = "Flirt";
-        public const string IDLE = "Idle";
-        public const string LOOP_LENGTH = "Loop length";
-        public const string MASTER_SPEED = "Master speed";
-        public const string MAXIMUM_VALUE = "Maximum value";
-        public const string MINIMUM_VALUE = "Minimum value";
-        public const string MORPHING_SPEED = "Morphing speed";
-        public const string MULTIPLIER = "Multiplier";
-        public const string PLAY = "Play";
-        public const string RANDOM_CHANCES_FOR_TRANSITIONS = "Random chances for transitions";
-        public const string RESET_USED_EXPRESSIONS_AT_LOOP = "Reset used expressions at loop";
-        public const string SMOOTH = "Smooth";
-        public const string TRIGGER_TRANSITIONS_MANUALLY = "Trigger transitions manually";
-    }
-
     sealed class ExpressionRandomizer : ScriptBase
     {
         const string VERSION = "0.0.0";
-        const string EXP_RAND_TRIGGER = "ExpRandTrigger";
         const string COLLISION_TRIGGER_DEFAULT_VAL = "None";
         const string FILTER_DEFAULT_VAL = "Filter morphs...";
 
@@ -233,13 +212,13 @@ namespace extraltodeus
         JSONStorableFloat _masterSpeedJsf;
         JSONStorableBool _playJsb;
         JSONStorableBool _smoothJsb;
-        JSONStorableFloat _animWaitJsf;
-        JSONStorableFloat _animLengthJsf;
-        JSONStorableBool _abaJsb;
-        JSONStorableBool _manualJsb;
-        JSONStorableBool _randomJsb;
-        JSONStorableFloat _triggerChanceJsf;
-        JSONStorableAction _manualTriggerAction;
+        JSONStorableFloat _loopLengthJsf;
+        JSONStorableFloat _morphingSpeedJsf;
+        JSONStorableBool _resetUsedExpressionsAtLoopJsb;
+        JSONStorableBool _triggerTransitionsManuallyJsb;
+        JSONStorableBool _randomChancesForTransitionsJsb;
+        JSONStorableFloat _chanceToTriggerJsf;
+        JSONStorableAction _triggerTransitionAction;
         JSONStorableAction _loadPreset1Action;
         JSONStorableAction _loadPreset2Action;
         JSONStorableUrl _loadPresetWithPathUrlJSON;
@@ -343,31 +322,32 @@ namespace extraltodeus
             _playJsb.setCallbackFunction = value => _play = value;
             _play = _playJsb.val;
             _smoothJsb = NewStorableBool(Name.SMOOTH, true);
-            _animWaitJsf = NewStorableFloat(Name.LOOP_LENGTH, 2f, 0.1f, 20f);
-            _animLengthJsf = NewStorableFloat(Name.MORPHING_SPEED, 1.0f, 0.1f, 20f);
-            _abaJsb = NewStorableBool(Name.RESET_USED_EXPRESSIONS_AT_LOOP, true);
-            _manualJsb = NewStorableBool(Name.TRIGGER_TRANSITIONS_MANUALLY, false, false);
-            _randomJsb = NewStorableBool(Name.RANDOM_CHANCES_FOR_TRANSITIONS, true, false);
-            _triggerChanceJsf = NewStorableFloat(Name.CHANCE_TO_TRIGGER, 75f, 0f, 100f, false);
-            _manualTriggerAction = NewStorableAction("Trigger transition", SetNewRandomMorphValues);
-            _loadPreset1Action = NewStorableAction("Load preset 1", () =>
+            _loopLengthJsf = NewStorableFloat(Name.LOOP_LENGTH, 2f, 0.1f, 20f);
+            _morphingSpeedJsf = NewStorableFloat(Name.MORPHING_SPEED, 1.0f, 0.1f, 20f);
+            _resetUsedExpressionsAtLoopJsb = NewStorableBool(Name.RESET_USED_EXPRESSIONS_AT_LOOP, true);
+            _triggerTransitionsManuallyJsb = NewStorableBool(Name.TRIGGER_TRANSITIONS_MANUALLY, false, false);
+            _randomChancesForTransitionsJsb = NewStorableBool(Name.RANDOM_CHANCES_FOR_TRANSITIONS, true, false);
+            _chanceToTriggerJsf = NewStorableFloat(Name.CHANCE_TO_TRIGGER, 75f, 0f, 100f, false);
+            _triggerTransitionAction = NewStorableAction(Name.TRIGGER_TRANSITION, SetNewRandomMorphValues);
+            _loadPreset1Action = NewStorableAction(Name.LOAD_PRESET_1, () =>
             {
                 _isLoadingPreset = true;
                 OnCustomPresetButtonClicked(1);
             });
-            _loadPreset2Action = NewStorableAction("Load preset 2", () =>
+            _loadPreset2Action = NewStorableAction(Name.LOAD_PRESET_2, () =>
             {
                 _isLoadingPreset = true;
                 OnCustomPresetButtonClicked(2);
             });
-            _loadPresetWithPathUrlJSON = new JSONStorableUrl("loadMocapWithPathUrl", string.Empty, "json", FileUtils.GetLastBrowseDir())
+            _loadPresetWithPathUrlJSON = new JSONStorableUrl("Load preset with path url", string.Empty, "json", FileUtils.GetLastBrowseDir())
             {
                 allowFullComputerBrowse = true,
                 allowBrowseAboveSuggestedPath = true,
                 hideExtension = true,
                 showDirs = true,
             };
-            _loadPresetWithPathJSON = new JSONStorableActionPresetFilePath("Load preset with path", OnLoadPathSelected, _loadPresetWithPathUrlJSON);
+            _loadPresetWithPathJSON =
+                new JSONStorableActionPresetFilePath(Name.LOAD_PRESET_WITH_PATH, OnLoadPathSelected, _loadPresetWithPathUrlJSON);
             RegisterPresetFilePathAction(_loadPresetWithPathJSON);
 
             _collisionTriggerJssc = new JSONStorableStringChooser(
@@ -393,8 +373,8 @@ namespace extraltodeus
             {
                 if(val != COLLISION_TRIGGER_DEFAULT_VAL)
                 {
-                    _manualJsb.val = true;
-                    _randomJsb.val = true;
+                    _triggerTransitionsManuallyJsb.val = true;
+                    _randomChancesForTransitionsJsb.val = true;
                 }
                 else
                 {
@@ -403,8 +383,8 @@ namespace extraltodeus
             };
             if(_collisionTriggerJssc.val != "None")
             {
-                _manualJsb.val = true;
-                _randomJsb.val = true;
+                _triggerTransitionsManuallyJsb.val = true;
+                _randomChancesForTransitionsJsb.val = true;
             }
 
             _useAndFilterJsb = new JSONStorableBool("AND filter", false)
@@ -493,10 +473,10 @@ namespace extraltodeus
                 {
                     collisionTrigger.enabled = true;
                     var startTrigger = collisionTrigger.trigger.CreateDiscreteActionStartInternal();
-                    startTrigger.name = EXP_RAND_TRIGGER;
+                    startTrigger.name = Name.EXP_RAND_TRIGGER;
                     startTrigger.receiverAtom = _person;
                     startTrigger.receiver = this;
-                    startTrigger.receiverTargetName = _manualTriggerAction.name;
+                    startTrigger.receiverTargetName = _triggerTransitionAction.name;
                 }
             }
         }
@@ -526,7 +506,7 @@ namespace extraltodeus
                 var startActions = triggerJSON["startActions"].AsArray;
                 for(int i = 0; i < startActions.Count; i++)
                 {
-                    if(startActions[i]["name"].Value == EXP_RAND_TRIGGER)
+                    if(startActions[i]["name"].Value == Name.EXP_RAND_TRIGGER)
                     {
                         startActions.Remove(i);
                     }
@@ -635,8 +615,8 @@ namespace extraltodeus
             CreateCustomToggle(_smoothJsb, new Vector2(280, -721), -285);
 
             _triggerTransitionButton = CreateCustomButton("Trigger transition", new Vector2(279, -786), new Vector2(-824, 52));
-            _manualTriggerAction.RegisterButton(_triggerTransitionButton);
-            _triggerTransitionsManuallyToggle = CreateCustomToggle(_manualJsb, new Vector2(10, -786), -285, false);
+            _triggerTransitionAction.RegisterButton(_triggerTransitionButton);
+            _triggerTransitionsManuallyToggle = CreateCustomToggle(_triggerTransitionsManuallyJsb, new Vector2(10, -786), -285, false);
             _triggerTransitionsManuallyToggle.label = "Manual mode";
 
             CreateSpacer().height = 63;
@@ -789,9 +769,9 @@ namespace extraltodeus
             _moreButton.button.onClick.AddListener(() => SelectOptionsUI(true));
             _moreButton.buttonText.fontSize = 26;
 
-            _loopLengthSlider = CreateSlider(_animWaitJsf);
-            _morphingSpeedSlider = CreateSlider(_animLengthJsf);
-            _abaToggle = CreateToggle(_abaJsb);
+            _loopLengthSlider = CreateSlider(_loopLengthJsf);
+            _morphingSpeedSlider = CreateSlider(_morphingSpeedJsf);
+            _abaToggle = CreateToggle(_resetUsedExpressionsAtLoopJsb);
         }
 
         void CreateMoreAdditionalOptionsUI()
@@ -802,8 +782,8 @@ namespace extraltodeus
             _backButton.button.onClick.AddListener(() => SelectOptionsUI(false));
             _moreButton.buttonText.fontSize = 26;
 
-            _randomToggle = CreateToggle(_randomJsb);
-            _triggerChanceSlider = CreateSlider(_triggerChanceJsf);
+            _randomToggle = CreateToggle(_randomChancesForTransitionsJsb);
+            _triggerChanceSlider = CreateSlider(_chanceToTriggerJsf);
             _triggerChanceSlider.valueFormat = "F0";
 
             _collisionTriggerPopup = CreateCollisionTriggerPopup();
@@ -1308,10 +1288,10 @@ namespace extraltodeus
             try
             {
                 _timer += Time.deltaTime;
-                if(_timer >= _animWaitJsf.val / _masterSpeedJsf.val)
+                if(_timer >= _loopLengthJsf.val / _masterSpeedJsf.val)
                 {
                     _timer = 0;
-                    if(!_manualJsb.val)
+                    if(!_triggerTransitionsManuallyJsb.val)
                     {
                         SetNewRandomMorphValues();
                     }
@@ -1328,9 +1308,9 @@ namespace extraltodeus
         {
             foreach(var morphModel in _enabledMorphs)
             {
-                if(!_randomJsb.val || UnityEngine.Random.Range(0f, 100f) <= _triggerChanceJsf.val)
+                if(!_randomChancesForTransitionsJsb.val || UnityEngine.Random.Range(0f, 100f) <= _chanceToTriggerJsf.val)
                 {
-                    morphModel.SetNewMorphValue(_minJsf.val, _maxJsf.val, _multiJsf.val, _abaJsb.val);
+                    morphModel.SetNewMorphValue(_minJsf.val, _maxJsf.val, _multiJsf.val, _resetUsedExpressionsAtLoopJsb.val);
                 }
             }
         }
@@ -1345,8 +1325,8 @@ namespace extraltodeus
             try
             {
                 float interpolant = _smoothJsb.val
-                    ? SmoothInterpolant(_animLengthJsf.val, _masterSpeedJsf.val, _timer, _animWaitJsf.val)
-                    : LinearInterpolant(_animLengthJsf.val, _masterSpeedJsf.val);
+                    ? SmoothInterpolant(_morphingSpeedJsf.val, _masterSpeedJsf.val, _timer, _loopLengthJsf.val)
+                    : LinearInterpolant(_morphingSpeedJsf.val, _masterSpeedJsf.val);
                 foreach(var morphModel in _enabledMorphs)
                 {
                     morphModel.CalculateMorphValue(interpolant);
@@ -1393,7 +1373,7 @@ namespace extraltodeus
             {
                 var asObject = asArray[i].AsObject;
                 string name = asObject["name"];
-                if(name == EXP_RAND_TRIGGER && asObject["receiver"] != null)
+                if(name == Name.EXP_RAND_TRIGGER && asObject["receiver"] != null)
                 {
                     return true;
                 }
