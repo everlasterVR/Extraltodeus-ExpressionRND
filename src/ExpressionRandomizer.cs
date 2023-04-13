@@ -100,7 +100,7 @@ namespace extraltodeus
         };
 
         [SuppressMessage("ReSharper", "InconsistentNaming")]
-        readonly Dictionary<string, JSONClass> _builtInPresetJSONs = new Dictionary<string, JSONClass>
+        readonly Dictionary<string, JSONClass> _presetJSONs = new Dictionary<string, JSONClass>
         {
             {
                 Name.IDLE,
@@ -121,7 +121,7 @@ namespace extraltodeus
                     [Name.MORPHING_SPEED] = { AsFloat = 3.00f },
                     /* Enabled morphs */
                     ["Brow/Brow Down"] = { AsBool = true },
-                    ["Brow/Brow Inner Dorn Left "] = { AsBool = true },
+                    ["Brow/Brow Inner Down Left"] = { AsBool = true },
                     ["Cheeks and Jaw/Cheek Eye Flex"] = { AsBool = true },
                     ["Cheeks and Jaw/Jaw In-Out"] = { AsBool = true },
                     ["Expressions/Smile Full Face"] = { AsBool = true },
@@ -192,11 +192,6 @@ namespace extraltodeus
                     ["Nose/Nose Wrinkle"] = { AsBool = true },
                 }
             },
-        };
-
-        [SuppressMessage("ReSharper", "InconsistentNaming")]
-        readonly Dictionary<string, JSONClass> _customPresetJSONs = new Dictionary<string, JSONClass>
-        {
             { Name.SLOT_1, null },
             { Name.SLOT_2, null },
         };
@@ -344,17 +339,17 @@ namespace extraltodeus
             _triggerTransitionAction = NewStorableAction(Name.TRIGGER_TRANSITION, NewRandomTargetMorphValues);
             _loadIdlePresetAction = NewStorableAction(Name.LOAD_IDLE_PRESET, () =>
             {
-                base.RestoreFromJSON(_builtInPresetJSONs[Name.IDLE]);
+                base.RestoreFromJSON(_presetJSONs[Name.IDLE]);
                 UpdatePresetButtons(Name.IDLE);
             });
             _loadFlirtPresetAction = NewStorableAction(Name.LOAD_FLIRT_PRESET, () =>
             {
-                base.RestoreFromJSON(_builtInPresetJSONs[Name.FLIRT]);
+                base.RestoreFromJSON(_presetJSONs[Name.FLIRT]);
                 UpdatePresetButtons(Name.FLIRT);
             });
             _loadEnjoyPresetAction = NewStorableAction(Name.LOAD_ENJOY_PRESET, () =>
             {
-                base.RestoreFromJSON(_builtInPresetJSONs[Name.ENJOY]);
+                base.RestoreFromJSON(_presetJSONs[Name.ENJOY]);
                 UpdatePresetButtons(Name.ENJOY);
             });
             _loadPreset1Action = NewStorableAction(Name.LOAD_PRESET_1, () => OnCustomPresetButtonClicked(Name.SLOT_1));
@@ -464,7 +459,7 @@ namespace extraltodeus
             if(!_restoringFromJson)
             {
                 _presetSetOnInit = Name.IDLE;
-                base.RestoreFromJSON(_builtInPresetJSONs[Name.IDLE]);
+                base.RestoreFromJSON(_presetJSONs[Name.IDLE]);
             }
 
             InvokeRepeating(nameof(TriggerMaintainer), 3f, 3f); // To check if the selected collision trigger is still there every 3 seconds
@@ -580,8 +575,6 @@ namespace extraltodeus
             _presetButtons[Name.ENJOY] = enjoyPresetButton;
             _loadEnjoyPresetAction.RegisterButton(enjoyPresetButton);
 
-            UpdatePresetButtons(_presetSetOnInit);
-
             _saveButton = CreateCustomButton("Save...", new Vector2(10 + 28, -118), new Vector2(-939, 52));
             _saveButton.button.onClick.AddListener(() => StartCoroutine(OnSaveButtonClicked()));
 
@@ -592,6 +585,8 @@ namespace extraltodeus
             var preset2Button = CreateCustomButton(Name.SLOT_2, new Vector2(10 + 293, -118), new Vector2(-969, 52));
             _presetButtons[Name.SLOT_2] = preset2Button;
             _loadPreset2Action.RegisterButton(preset2Button);
+
+            UpdatePresetButtons(_presetSetOnInit);
 
             var fileButton = CreateCustomButton(Name.FILE, new Vector2(10 + 410, -118), new Vector2(-969, 52));
             _presetButtons[Name.FILE] = fileButton;
@@ -671,7 +666,7 @@ namespace extraltodeus
         {
             if(_isSavingPreset)
             {
-                _customPresetJSONs[slot] = GetJSONInternal();
+                _presetJSONs[slot] = GetJSONInternal();
                 UpdatePresetButtons(slot);
             }
             else
@@ -684,7 +679,7 @@ namespace extraltodeus
 
         void LoadCustomPreset(string slot)
         {
-            var presetJSON = _customPresetJSONs[slot];
+            var presetJSON = _presetJSONs[slot];
             if(presetJSON == null)
             {
                 Loggr.Message($"Preset {slot} is not saved yet.");
@@ -1385,17 +1380,20 @@ namespace extraltodeus
             _awaitingResetMorphs.Clear();
         }
 
+        [SuppressMessage("ReSharper", "ConditionIsAlwaysTrueOrFalse")]
         public override JSONClass GetJSON(bool includePhysical = true, bool includeAppearance = true, bool forceStore = false)
         {
+            // prevent potentially hundreds of morphs from being stored as false
+            forceStore = false;
             var jc = GetJSONInternal(includePhysical, includeAppearance, forceStore);
-            if(_customPresetJSONs[Name.SLOT_1] != null)
+            if(_presetJSONs[Name.SLOT_1] != null)
             {
-                jc["Preset 1"] = _customPresetJSONs[Name.SLOT_1];
+                jc[Name.PRESET_1] = _presetJSONs[Name.SLOT_1];
             }
 
-            if(_customPresetJSONs[Name.SLOT_2] != null)
+            if(_presetJSONs[Name.SLOT_2] != null)
             {
-                jc["Preset 2"] = _customPresetJSONs[Name.SLOT_2];
+                jc[Name.PRESET_1] = _presetJSONs[Name.SLOT_2];
             }
 
             return jc;
@@ -1463,28 +1461,29 @@ namespace extraltodeus
                  *
                  * In this case, the restore is skipped and default Idle preset is enabled instead.
                  */
+                base.RestoreFromJSON(_presetJSONs[Name.IDLE]);
                 _presetSetOnInit = Name.IDLE;
-                base.RestoreFromJSON(_builtInPresetJSONs[Name.IDLE]);
             }
             else
             {
-                CheckBuiltInPresetEnabledInJSON(jc);
                 base.RestoreFromJSON(jc, restorePhysical, restoreAppearance, presetAtoms, setMissingToDefault);
-                if(jc.HasKey("Preset 1"))
+                if(jc.HasKey(Name.PRESET_1))
                 {
-                    _customPresetJSONs[Name.SLOT_1] = jc["Preset 1"].AsObject;
+                    _presetJSONs[Name.SLOT_1] = jc[Name.PRESET_1].AsObject;
                 }
 
-                if(jc.HasKey("Preset 2"))
+                if(jc.HasKey(Name.PRESET_2))
                 {
-                    _customPresetJSONs[Name.SLOT_2] = jc["Preset 2"].AsObject;
+                    _presetJSONs[Name.SLOT_2] = jc[Name.PRESET_2].AsObject;
                 }
+
+                CheckPresetEnabledInJSON(jc);
             }
 
             _restoringFromJson = false;
         }
 
-        void CheckBuiltInPresetEnabledInJSON(JSONClass jc)
+        void CheckPresetEnabledInJSON(JSONClass jc)
         {
             /* Storable params that don't matter for the equality comparison of stored JSON to built-in preset JSON */
             string[] nonComparisonKeys =
@@ -1497,14 +1496,26 @@ namespace extraltodeus
                 Name.RANDOM_CHANCES_FOR_TRANSITIONS,
                 Name.CHANCE_TO_TRIGGER,
                 Name.COLLISION_TRIGGER,
+                Name.PRESET_1,
+                Name.PRESET_2,
             };
+
+            // string[] comparisonKeys =
+            // {
+            //
+            // }
 
             var jcKeys = jc.Keys.ToList();
             jcKeys.RemoveAll(nonComparisonKeys.Contains);
             jcKeys.Sort();
 
-            foreach(var kvp in _builtInPresetJSONs)
+            foreach(var kvp in _presetJSONs)
             {
+                if(kvp.Value == null)
+                {
+                    continue;
+                }
+
                 var presetJSON = kvp.Value;
                 var presetJSONKeys = presetJSON.Keys.ToList();
                 presetJSONKeys.RemoveAll(nonComparisonKeys.Contains);

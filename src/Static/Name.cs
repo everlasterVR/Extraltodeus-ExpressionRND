@@ -27,4 +27,6 @@
     public const string SLOT_1 = "Slot 1";
     public const string SLOT_2 = "Slot 2";
     public const string FILE = "File";
+    public const string PRESET_1 = "Preset 1";
+    public const string PRESET_2 = "Preset 2";
 }
