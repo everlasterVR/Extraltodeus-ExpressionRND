@@ -24,4 +24,7 @@
     public const string LOAD_PRESET_1 = "Load preset 1";
     public const string LOAD_PRESET_2 = "Load preset 2";
     public const string LOAD_PRESET_WITH_PATH = "Load preset with path";
+    public const string SLOT_1 = "Slot 1";
+    public const string SLOT_2 = "Slot 2";
+    public const string FILE = "File";
 }

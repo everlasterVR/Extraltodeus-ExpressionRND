@@ -60,8 +60,6 @@ namespace extraltodeus
             {
                 _regionPopup.popup.visible = false;
             }
-
-            SetPresetTargetButtonsActive(false);
         }
 
         readonly string[] _excludeRegions =
@@ -197,7 +195,11 @@ namespace extraltodeus
         };
 
         [SuppressMessage("ReSharper", "InconsistentNaming")]
-        readonly JSONClass[] _customPresetJSONs = { null, null };
+        readonly Dictionary<string, JSONClass> _customPresetJSONs = new Dictionary<string, JSONClass>
+        {
+            { Name.SLOT_1, null },
+            { Name.SLOT_2, null },
+        };
 
         string _presetSetOnInit;
         bool _restoringFromJson;
@@ -343,28 +345,20 @@ namespace extraltodeus
             _loadIdlePresetAction = NewStorableAction(Name.LOAD_IDLE_PRESET, () =>
             {
                 base.RestoreFromJSON(_builtInPresetJSONs[Name.IDLE]);
-                UpdateBuiltInPresetButtons(Name.IDLE);
+                UpdatePresetButtons(Name.IDLE);
             });
             _loadFlirtPresetAction = NewStorableAction(Name.LOAD_FLIRT_PRESET, () =>
             {
                 base.RestoreFromJSON(_builtInPresetJSONs[Name.FLIRT]);
-                UpdateBuiltInPresetButtons(Name.FLIRT);
+                UpdatePresetButtons(Name.FLIRT);
             });
             _loadEnjoyPresetAction = NewStorableAction(Name.LOAD_ENJOY_PRESET, () =>
             {
                 base.RestoreFromJSON(_builtInPresetJSONs[Name.ENJOY]);
-                UpdateBuiltInPresetButtons(Name.ENJOY);
+                UpdatePresetButtons(Name.ENJOY);
             });
-            _loadPreset1Action = NewStorableAction(Name.LOAD_PRESET_1, () =>
-            {
-                _isLoadingPreset = true;
-                OnCustomPresetButtonClicked(1);
-            });
-            _loadPreset2Action = NewStorableAction(Name.LOAD_PRESET_2, () =>
-            {
-                _isLoadingPreset = true;
-                OnCustomPresetButtonClicked(2);
-            });
+            _loadPreset1Action = NewStorableAction(Name.LOAD_PRESET_1, () => OnCustomPresetButtonClicked(Name.SLOT_1));
+            _loadPreset2Action = NewStorableAction(Name.LOAD_PRESET_2, () => OnCustomPresetButtonClicked(Name.SLOT_2));
             _loadPresetWithPathUrlJSON = new JSONStorableUrl("Load preset with path url", string.Empty, "json", FileUtils.GetLastBrowseDir())
             {
                 allowFullComputerBrowse = true,
@@ -372,8 +366,11 @@ namespace extraltodeus
                 hideExtension = true,
                 showDirs = true,
             };
-            _loadPresetWithPathJSON =
-                new JSONStorableActionPresetFilePath(Name.LOAD_PRESET_WITH_PATH, OnLoadPathSelected, _loadPresetWithPathUrlJSON);
+            _loadPresetWithPathJSON = new JSONStorableActionPresetFilePath(
+                Name.LOAD_PRESET_WITH_PATH,
+                OnLoadPathSelected,
+                _loadPresetWithPathUrlJSON
+            );
             RegisterPresetFilePathAction(_loadPresetWithPathJSON);
 
             _collisionTriggerJssc = new JSONStorableStringChooser(
@@ -546,13 +543,9 @@ namespace extraltodeus
             }
         }
 
-        readonly Dictionary<string, UIDynamicButton> _builtInPresetButtons = new Dictionary<string, UIDynamicButton>();
+        readonly Dictionary<string, UIDynamicButton> _presetButtons = new Dictionary<string, UIDynamicButton>();
 
         UIDynamicButton _saveButton;
-        UIDynamicButton _loadButton;
-        UIDynamicButton _preset1Button;
-        UIDynamicButton _preset2Button;
-        UIDynamicButton _fileButton;
 
         UIDynamicButton _moreButton;
         UIDynamicSlider _loopLengthSlider;
@@ -566,53 +559,49 @@ namespace extraltodeus
         UIDynamicButton _triggerTransitionButton;
         UIDynamicPopup _collisionTriggerPopup;
 
-        bool _isLoadingPreset;
         bool _isSavingPreset;
 
         void CreateLeftUI()
         {
             CreateSpacer().height = 106f;
 
-            var idlePresetButton = CreateCustomButton(Name.IDLE, new Vector2(10, -62), new Vector2(-910, 52));
+            var idlePresetButton = CreateCustomButton(Name.IDLE, new Vector2(10, -62), new Vector2(-911, 52));
             idlePresetButton.buttonColor = new Color(0.66f, 0.77f, 0.88f);
-            _builtInPresetButtons[Name.IDLE] = idlePresetButton;
+            _presetButtons[Name.IDLE] = idlePresetButton;
             _loadIdlePresetAction.RegisterButton(idlePresetButton);
 
-            var flirtPresetButton = CreateCustomButton(Name.FLIRT, new Vector2(10 + 175, -62), new Vector2(-910, 52));
+            var flirtPresetButton = CreateCustomButton(Name.FLIRT, new Vector2(10 + 176, -62), new Vector2(-911, 52));
             flirtPresetButton.buttonColor = new Color(0.88f, 0.77f, 0.66f);
-            _builtInPresetButtons[Name.FLIRT] = flirtPresetButton;
+            _presetButtons[Name.FLIRT] = flirtPresetButton;
             _loadFlirtPresetAction.RegisterButton(flirtPresetButton);
 
-            var enjoyPresetButton = CreateCustomButton(Name.ENJOY, new Vector2(10 + 175 * 2, -62), new Vector2(-910, 52));
+            var enjoyPresetButton = CreateCustomButton(Name.ENJOY, new Vector2(10 + 176 * 2, -62), new Vector2(-911, 52));
             enjoyPresetButton.buttonColor = new Color(0.88f, 0.66f, 0.77f);
-            _builtInPresetButtons[Name.ENJOY] = enjoyPresetButton;
+            _presetButtons[Name.ENJOY] = enjoyPresetButton;
             _loadEnjoyPresetAction.RegisterButton(enjoyPresetButton);
 
-            UpdateBuiltInPresetButtons(_presetSetOnInit);
+            UpdatePresetButtons(_presetSetOnInit);
 
-            _saveButton = CreateCustomButton("Save", new Vector2(10, -118), new Vector2(-981, 52));
+            _saveButton = CreateCustomButton("Save...", new Vector2(10 + 28, -118), new Vector2(-939, 52));
             _saveButton.button.onClick.AddListener(() => StartCoroutine(OnSaveButtonClicked()));
 
-            _loadButton = CreateCustomButton("Load", new Vector2(10 + 103, -118), new Vector2(-981, 52));
-            _loadButton.button.onClick.AddListener(() => StartCoroutine(OnLoadButtonClicked()));
+            var preset1Button = CreateCustomButton(Name.SLOT_1, new Vector2(10 + 176, -118), new Vector2(-969, 52));
+            _presetButtons[Name.SLOT_1] = preset1Button;
+            _loadPreset1Action.RegisterButton(preset1Button);
 
-            _preset1Button = CreateCustomButton("1", new Vector2(10 + 230, -118), new Vector2(-986, 52));
-            _preset1Button.SetActiveStyle(false, true);
-            _loadPreset1Action.RegisterButton(_preset1Button);
+            var preset2Button = CreateCustomButton(Name.SLOT_2, new Vector2(10 + 293, -118), new Vector2(-969, 52));
+            _presetButtons[Name.SLOT_2] = preset2Button;
+            _loadPreset2Action.RegisterButton(preset2Button);
 
-            _preset2Button = CreateCustomButton("2", new Vector2(10 + 329, -118), new Vector2(-986, 52));
-            _preset2Button.SetActiveStyle(false, true);
-            _loadPreset2Action.RegisterButton(_preset2Button);
-
-            _fileButton = CreateCustomButton("File", new Vector2(10 + 427, -118), new Vector2(-986, 52));
-            _fileButton.SetActiveStyle(false, true);
-            _fileButton.button.onClick.AddListener(() =>
+            var fileButton = CreateCustomButton(Name.FILE, new Vector2(10 + 410, -118), new Vector2(-969, 52));
+            _presetButtons[Name.FILE] = fileButton;
+            fileButton.button.onClick.AddListener(() =>
             {
                 if(_isSavingPreset)
                 {
                     FileUtils.OpenSavePresetDialog(OnSavePathSelected);
                 }
-                else if(_isLoadingPreset)
+                else
                 {
                     FileUtils.OpenLoadPresetDialog(OnLoadPathSelected);
                 }
@@ -646,6 +635,7 @@ namespace extraltodeus
                 if(presetJSON != null)
                 {
                     base.RestoreFromJSON(presetJSON);
+                    UpdatePresetButtons(Name.FILE);
                 }
             });
         }
@@ -661,14 +651,13 @@ namespace extraltodeus
 
                 SaveJSON(GetJSONInternal(), path);
                 SuperController.singleton.DoSaveScreenshot(path);
+                UpdatePresetButtons(Name.FILE);
             });
         }
 
         void OnPathSelected(string path, Action saveOrLoadAction)
         {
             _isSavingPreset = false;
-            _isLoadingPreset = false;
-            SetPresetTargetButtonsActive(false);
             if(string.IsNullOrEmpty(path))
             {
                 return;
@@ -676,101 +665,77 @@ namespace extraltodeus
 
             FileUtils.UpdateLastBrowseDir(path);
             saveOrLoadAction();
-            UpdateBuiltInPresetButtons(null);
         }
 
-        void OnCustomPresetButtonClicked(int customPreset)
+        void OnCustomPresetButtonClicked(string slot)
         {
             if(_isSavingPreset)
             {
-                int index = customPreset - 1;
-                _customPresetJSONs[index] = GetJSONInternal();
-                _isSavingPreset = false;
+                _customPresetJSONs[slot] = GetJSONInternal();
+                UpdatePresetButtons(slot);
             }
-            else if(_isLoadingPreset)
+            else
             {
-                LoadCustomPreset(customPreset);
-                _isLoadingPreset = false;
+                LoadCustomPreset(slot);
             }
+
+            _isSavingPreset = false;
         }
 
-        void LoadCustomPreset(int customPreset)
+        void LoadCustomPreset(string slot)
         {
-            int index = customPreset - 1;
-            var presetJSON = _customPresetJSONs[index];
+            var presetJSON = _customPresetJSONs[slot];
             if(presetJSON == null)
             {
-                Loggr.Message($"Preset {customPreset} is not saved yet.");
+                Loggr.Message($"Preset {slot} is not saved yet.");
             }
             else
             {
                 base.RestoreFromJSON(presetJSON);
-                UpdateBuiltInPresetButtons(null);
+                UpdatePresetButtons(slot);
             }
         }
 
-        void UpdateBuiltInPresetButtons(string selectedPresetName)
+        void UpdatePresetButtons(string selectedPresetName)
         {
-            _builtInPresetButtons[Name.IDLE].label = "Idle";
-            _builtInPresetButtons[Name.FLIRT].label = "Flirt";
-            _builtInPresetButtons[Name.ENJOY].label = "Enjoy";
-
-            _builtInPresetButtons[Name.IDLE].SetNormalFocusedColor();
-            _builtInPresetButtons[Name.FLIRT].SetNormalFocusedColor();
-            _builtInPresetButtons[Name.ENJOY].SetNormalFocusedColor();
-
-            if(!string.IsNullOrEmpty(selectedPresetName) && _builtInPresetButtons.ContainsKey(selectedPresetName))
+            foreach(var kvp in _presetButtons)
             {
-                _builtInPresetButtons[selectedPresetName].label = _builtInPresetButtons[selectedPresetName].label.Bold();
-                _builtInPresetButtons[selectedPresetName].SetInvisibleFocusedColor();
+                kvp.Value.label = kvp.Key;
+                kvp.Value.SetNormalFocusedColor();
+            }
+
+            if(!string.IsNullOrEmpty(selectedPresetName) && _presetButtons.ContainsKey(selectedPresetName))
+            {
+                _presetButtons[selectedPresetName].label = _presetButtons[selectedPresetName].label.Bold();
+                _presetButtons[selectedPresetName].SetInvisibleFocusedColor();
             }
         }
 
-        void SetPresetTargetButtonsActive(bool value)
-        {
-            _preset1Button.SetActiveStyle(value, true);
-            _preset2Button.SetActiveStyle(value, true);
-            _fileButton.SetActiveStyle(value, true);
-        }
+        readonly static Color _oscillationEndColor = new Color(0.66f, 0.88f, 0.77f);
+        readonly static Color _oscillationStartColor = 0.67f * _oscillationEndColor;
+        const float OSCILLATION_FREQUENCY = 1f;
 
         IEnumerator OnSaveButtonClicked()
         {
             _isSavingPreset = true;
-            _isLoadingPreset = false;
-            SetPresetTargetButtonsActive(true);
-            _saveButton.SetInvisibleFocusedColor();
-            _loadButton.SetActiveStyle(false, true);
+            _saveButton.SetActiveStyle(false, true);
 
             float timeout = Time.unscaledTime + 5;
             while(Time.unscaledTime < timeout && _isSavingPreset)
             {
+                float t = (Mathf.Sin(Time.unscaledTime * OSCILLATION_FREQUENCY * 2 * Mathf.PI) + 1) / 2;
+                var currentColor = Color.Lerp(_oscillationStartColor, _oscillationEndColor, t);
+                _presetButtons[Name.SLOT_1].buttonColor = currentColor;
+                _presetButtons[Name.SLOT_2].buttonColor = currentColor;
+                _presetButtons[Name.FILE].buttonColor = currentColor;
                 yield return null;
             }
 
+            _presetButtons[Name.SLOT_1].buttonColor = Colors.defaultBtnColor;
+            _presetButtons[Name.SLOT_2].buttonColor = Colors.defaultBtnColor;
+            _presetButtons[Name.FILE].buttonColor = Colors.defaultBtnColor;
+
             _isSavingPreset = false;
-            SetPresetTargetButtonsActive(false);
-            _saveButton.SetNormalFocusedColor();
-            _loadButton.SetActiveStyle(true);
-        }
-
-        IEnumerator OnLoadButtonClicked()
-        {
-            _isSavingPreset = false;
-            _isLoadingPreset = true;
-
-            SetPresetTargetButtonsActive(true);
-            _loadButton.SetInvisibleFocusedColor();
-            _saveButton.SetActiveStyle(false, true);
-
-            float timeout = Time.unscaledTime + 5;
-            while(Time.unscaledTime < timeout && _isLoadingPreset)
-            {
-                yield return null;
-            }
-
-            _isLoadingPreset = false;
-            SetPresetTargetButtonsActive(false);
-            _loadButton.SetNormalFocusedColor();
             _saveButton.SetActiveStyle(true);
         }
 
@@ -1423,14 +1388,14 @@ namespace extraltodeus
         public override JSONClass GetJSON(bool includePhysical = true, bool includeAppearance = true, bool forceStore = false)
         {
             var jc = GetJSONInternal(includePhysical, includeAppearance, forceStore);
-            if(_customPresetJSONs[0] != null)
+            if(_customPresetJSONs[Name.SLOT_1] != null)
             {
-                jc["Preset 1"] = _customPresetJSONs[0];
+                jc["Preset 1"] = _customPresetJSONs[Name.SLOT_1];
             }
 
-            if(_customPresetJSONs[1] != null)
+            if(_customPresetJSONs[Name.SLOT_2] != null)
             {
-                jc["Preset 2"] = _customPresetJSONs[1];
+                jc["Preset 2"] = _customPresetJSONs[Name.SLOT_2];
             }
 
             return jc;
@@ -1507,12 +1472,12 @@ namespace extraltodeus
                 base.RestoreFromJSON(jc, restorePhysical, restoreAppearance, presetAtoms, setMissingToDefault);
                 if(jc.HasKey("Preset 1"))
                 {
-                    _customPresetJSONs[0] = jc["Preset 1"].AsObject;
+                    _customPresetJSONs[Name.SLOT_1] = jc["Preset 1"].AsObject;
                 }
 
                 if(jc.HasKey("Preset 2"))
                 {
-                    _customPresetJSONs[1] = jc["Preset 2"].AsObject;
+                    _customPresetJSONs[Name.SLOT_2] = jc["Preset 2"].AsObject;
                 }
             }
 
