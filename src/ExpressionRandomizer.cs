@@ -96,6 +96,11 @@ namespace extraltodeus
             "Eye Roll Back_DD",
         };
 
+        readonly string[] _excludeMorphNames =
+        {
+            "Jaw Side-Side",
+        };
+
         [SuppressMessage("ReSharper", "InconsistentNaming")]
         readonly Dictionary<string, JSONClass> _builtInPresetJSONs = new Dictionary<string, JSONClass>
         {
@@ -121,7 +126,6 @@ namespace extraltodeus
                     ["Brow/Brow Inner Dorn Left "] = { AsBool = true },
                     ["Cheeks and Jaw/Cheek Eye Flex"] = { AsBool = true },
                     ["Cheeks and Jaw/Jaw In-Out"] = { AsBool = true },
-                    ["Cheeks and Jaw/Jaw Side-Side"] = { AsBool = true },
                     ["Expressions/Smile Full Face"] = { AsBool = true },
                     ["Mouth/Mouth Smile Simple Left"] = { AsBool = true },
                     ["Nose/Nose Wrinkle"] = { AsBool = true },
@@ -299,14 +303,13 @@ namespace extraltodeus
             var geometry = (DAZCharacterSelector) _person.GetStorableByID("geometry");
             _morphsControlUI = geometry.morphsControlUI;
 
-            // TODO ignore morphs that control other morphs
-            //          if such morph is set enabled, its controller morph should be zeroed
             foreach(var morph in _morphsControlUI.GetMorphs())
             {
                 if(
                     !morph.hasBoneModificationFormulas &&
                     !morph.hasBoneRotationFormulas &&
                     _poseRegions.Any(morph.region.Contains) &&
+                    !_excludeMorphNames.Any(morph.displayName.Contains) &&
                     !_excludeRegions.Any(morph.region.Contains) ||
                     _includeMorphNames.Any(morph.displayName.Contains)
                 )
