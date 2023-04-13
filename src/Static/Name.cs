@@ -18,6 +18,9 @@
     public const string TRIGGER_TRANSITION = "Trigger transition";
     public const string TRIGGER_TRANSITIONS_MANUALLY = "Trigger transitions manually";
     public const string EXP_RAND_TRIGGER = "ExpRandTrigger";
+    public const string LOAD_IDLE_PRESET = "Load Idle preset";
+    public const string LOAD_FLIRT_PRESET = "Load Flirt preset";
+    public const string LOAD_ENJOY_PRESET = "Load Enjoy preset";
     public const string LOAD_PRESET_1 = "Load preset 1";
     public const string LOAD_PRESET_2 = "Load preset 2";
     public const string LOAD_PRESET_WITH_PATH = "Load preset with path";

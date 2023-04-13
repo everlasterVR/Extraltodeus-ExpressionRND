@@ -108,13 +108,14 @@ namespace extraltodeus
                     [Name.SMOOTH] = { AsBool = true },
                     [Name.RESET_USED_EXPRESSIONS_AT_LOOP] = { AsBool = true },
                     [Name.TRIGGER_TRANSITIONS_MANUALLY] = { AsBool = false },
-                    [Name.RANDOM_CHANCES_FOR_TRANSITIONS] = { AsBool = false },
-                    [Name.MINIMUM_VALUE] = { AsFloat = -0.30f },
-                    [Name.MAXIMUM_VALUE] = { AsFloat = 0.60f },
-                    [Name.MULTIPLIER] = { AsFloat = 0.50f },
-                    [Name.MASTER_SPEED] = { AsFloat = 0.65f },
-                    [Name.LOOP_LENGTH] = { AsFloat = 2.00f },
-                    [Name.MORPHING_SPEED] = { AsFloat = 4.00f },
+                    [Name.RANDOM_CHANCES_FOR_TRANSITIONS] = { AsBool = true },
+                    [Name.CHANCE_TO_TRIGGER] = { AsFloat = 90f },
+                    [Name.MINIMUM_VALUE] = { AsFloat = -0.15f },
+                    [Name.MAXIMUM_VALUE] = { AsFloat = 0.30f },
+                    [Name.MULTIPLIER] = { AsFloat = 1.00f },
+                    [Name.MASTER_SPEED] = { AsFloat = 1.00f },
+                    [Name.LOOP_LENGTH] = { AsFloat = 4.00f },
+                    [Name.MORPHING_SPEED] = { AsFloat = 3.00f },
                     /* Enabled morphs */
                     ["Brow/Brow Down"] = { AsBool = true },
                     ["Brow/Brow Inner Dorn Left "] = { AsBool = true },
@@ -136,24 +137,24 @@ namespace extraltodeus
                     [Name.RESET_USED_EXPRESSIONS_AT_LOOP] = { AsBool = true },
                     [Name.TRIGGER_TRANSITIONS_MANUALLY] = { AsBool = false },
                     [Name.RANDOM_CHANCES_FOR_TRANSITIONS] = { AsBool = true },
-                    [Name.CHANCE_TO_TRIGGER] = { AsFloat = 50f },
-                    [Name.MINIMUM_VALUE] = { AsFloat = 0.15f },
-                    [Name.MAXIMUM_VALUE] = { AsFloat = 0.50f },
+                    [Name.CHANCE_TO_TRIGGER] = { AsFloat = 33f },
+                    [Name.MINIMUM_VALUE] = { AsFloat = 0.06f },
+                    [Name.MAXIMUM_VALUE] = { AsFloat = 0.48f },
                     [Name.MULTIPLIER] = { AsFloat = 1.00f },
-                    [Name.MASTER_SPEED] = { AsFloat = 1.00f },
-                    [Name.LOOP_LENGTH] = { AsFloat = 4.00f },
-                    [Name.MORPHING_SPEED] = { AsFloat = 15.00f },
+                    [Name.MASTER_SPEED] = { AsFloat = 3.00f },
+                    [Name.LOOP_LENGTH] = { AsFloat = 8.00f },
+                    [Name.MORPHING_SPEED] = { AsFloat = 4.00f },
                     /* Enabled morphs */
                     ["Brow/Brow Inner Down Right"] = { AsBool = true },
                     ["Brow/Brow Inner Up Right"] = { AsBool = true },
                     ["Cheeks and Jaw/Cheek Eye Flex"] = { AsBool = true },
                     ["Expressions/Flirting"] = { AsBool = true },
                     ["Expressions/Smile Full Face"] = { AsBool = true },
+                    ["Expressions/Smile Open Full Face"] = { AsBool = true },
                     ["Eyes/Eyes Squint"] = { AsBool = true },
                     ["Eyes/Pupils Dialate"] = { AsBool = true },
                     ["Lips/Lip Bottom In Left"] = { AsBool = true },
                     ["Lips/Lips Pucker"] = { AsBool = true },
-                    ["Mouth/Mouth Smile"] = { AsBool = true },
                     ["Mouth/Mouth Smile Simple Left"] = { AsBool = true },
                     ["Mouth/Mouth Smile Simple Right"] = { AsBool = true },
                 }
@@ -219,6 +220,9 @@ namespace extraltodeus
         JSONStorableBool _randomChancesForTransitionsJsb;
         JSONStorableFloat _chanceToTriggerJsf;
         JSONStorableAction _triggerTransitionAction;
+        JSONStorableAction _loadIdlePresetAction;
+        JSONStorableAction _loadFlirtPresetAction;
+        JSONStorableAction _loadEnjoyPresetAction;
         JSONStorableAction _loadPreset1Action;
         JSONStorableAction _loadPreset2Action;
         JSONStorableUrl _loadPresetWithPathUrlJSON;
@@ -329,6 +333,21 @@ namespace extraltodeus
             _randomChancesForTransitionsJsb = NewStorableBool(Name.RANDOM_CHANCES_FOR_TRANSITIONS, true, false);
             _chanceToTriggerJsf = NewStorableFloat(Name.CHANCE_TO_TRIGGER, 75f, 0f, 100f, false);
             _triggerTransitionAction = NewStorableAction(Name.TRIGGER_TRANSITION, SetNewRandomMorphValues);
+            _loadIdlePresetAction = NewStorableAction(Name.LOAD_IDLE_PRESET, () =>
+            {
+                base.RestoreFromJSON(_builtInPresetJSONs[Name.IDLE]);
+                UpdateBuiltInPresetButtons(Name.IDLE);
+            });
+            _loadFlirtPresetAction = NewStorableAction(Name.LOAD_FLIRT_PRESET, () =>
+            {
+                base.RestoreFromJSON(_builtInPresetJSONs[Name.FLIRT]);
+                UpdateBuiltInPresetButtons(Name.FLIRT);
+            });
+            _loadEnjoyPresetAction = NewStorableAction(Name.LOAD_ENJOY_PRESET, () =>
+            {
+                base.RestoreFromJSON(_builtInPresetJSONs[Name.ENJOY]);
+                UpdateBuiltInPresetButtons(Name.ENJOY);
+            });
             _loadPreset1Action = NewStorableAction(Name.LOAD_PRESET_1, () =>
             {
                 _isLoadingPreset = true;
@@ -550,30 +569,17 @@ namespace extraltodeus
             var idlePresetButton = CreateCustomButton(Name.IDLE, new Vector2(10, -62), new Vector2(-910, 52));
             idlePresetButton.buttonColor = new Color(0.66f, 0.77f, 0.88f);
             _builtInPresetButtons[Name.IDLE] = idlePresetButton;
+            _loadIdlePresetAction.RegisterButton(idlePresetButton);
 
             var flirtPresetButton = CreateCustomButton(Name.FLIRT, new Vector2(10 + 175, -62), new Vector2(-910, 52));
             flirtPresetButton.buttonColor = new Color(0.88f, 0.77f, 0.66f);
             _builtInPresetButtons[Name.FLIRT] = flirtPresetButton;
+            _loadFlirtPresetAction.RegisterButton(flirtPresetButton);
 
             var enjoyPresetButton = CreateCustomButton(Name.ENJOY, new Vector2(10 + 175 * 2, -62), new Vector2(-910, 52));
             enjoyPresetButton.buttonColor = new Color(0.88f, 0.66f, 0.77f);
             _builtInPresetButtons[Name.ENJOY] = enjoyPresetButton;
-
-            idlePresetButton.button.onClick.AddListener(() =>
-            {
-                base.RestoreFromJSON(_builtInPresetJSONs[Name.IDLE]);
-                UpdateBuiltInPresetButtons(Name.IDLE);
-            });
-            flirtPresetButton.button.onClick.AddListener(() =>
-            {
-                base.RestoreFromJSON(_builtInPresetJSONs[Name.FLIRT]);
-                UpdateBuiltInPresetButtons(Name.FLIRT);
-            });
-            enjoyPresetButton.button.onClick.AddListener(() =>
-            {
-                base.RestoreFromJSON(_builtInPresetJSONs[Name.ENJOY]);
-                UpdateBuiltInPresetButtons(Name.ENJOY);
-            });
+            _loadEnjoyPresetAction.RegisterButton(enjoyPresetButton);
 
             UpdateBuiltInPresetButtons(_presetSetOnInit);
 
