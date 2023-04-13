@@ -1308,7 +1308,7 @@ namespace extraltodeus
 
                 float resetInterpolant = _smoothJsb.val
                     ? SmoothInterpolant(deltaTime, _morphingSpeedJsf.val, _masterSpeedJsf.val, morphModel.SmoothResetTimer, _loopLengthJsf.val)
-                    : LinearInterpolant(deltaTime, _morphingSpeedJsf.val, _masterSpeedJsf.val);
+                    : LinearInterpolant(deltaTime, _morphingSpeedJsf.val, _masterSpeedJsf.val, _loopLengthJsf.val);
                 bool finished = morphModel.SmoothResetValue(resetInterpolant);
                 if(finished)
                 {
@@ -1332,7 +1332,7 @@ namespace extraltodeus
         {
             float interpolant = _smoothJsb.val
                 ? SmoothInterpolant(deltaTime, _morphingSpeedJsf.val, _masterSpeedJsf.val, timer, _loopLengthJsf.val)
-                : LinearInterpolant(deltaTime, _morphingSpeedJsf.val, _masterSpeedJsf.val);
+                : LinearInterpolant(deltaTime, _morphingSpeedJsf.val, _masterSpeedJsf.val, _loopLengthJsf.val);
 
             foreach(var morphModel in _enabledMorphs)
             {
@@ -1348,9 +1348,9 @@ namespace extraltodeus
                 Mathf.Sin(timer / (loopLength / masterSpeed) * Mathf.PI);
         }
 
-        static float LinearInterpolant(float deltaTime, float morphingSpeed, float masterSpeed)
+        static float LinearInterpolant(float deltaTime, float morphingSpeed, float masterSpeed, float loopLength)
         {
-            return deltaTime * morphingSpeed * masterSpeed;
+            return deltaTime * morphingSpeed * masterSpeed / (loopLength * 30);
         }
 
         static bool CheckIfTriggerExists(CollisionTrigger trig)
