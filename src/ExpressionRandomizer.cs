@@ -1301,7 +1301,8 @@ namespace extraltodeus
 
             try
             {
-                _timer += Time.deltaTime;
+                float deltaTime = Time.deltaTime;
+                _timer += deltaTime;
                 if(_timer >= _timeout)
                 {
                     _timer = 0f;
@@ -1311,8 +1312,8 @@ namespace extraltodeus
                     }
                 }
 
-                UpdateMorphs(_timer);
-                ResetAwaitingMorphs();
+                UpdateMorphs(_timer, deltaTime);
+                ResetAwaitingMorphs(deltaTime);
             }
             catch(Exception e)
             {
@@ -1321,28 +1322,29 @@ namespace extraltodeus
             }
         }
 
-        void ResetAwaitingMorphs()
+        void ResetAwaitingMorphs(float deltaTime)
         {
-            int awaitingResetCount = _awaitingResetMorphs.Count;
-            if(awaitingResetCount > 0)
+            if(_awaitingResetMorphs.Count <= 0)
             {
-                for(int i = awaitingResetCount - 1; i >= 0; i--)
-                {
-                    var morphModel = _awaitingResetMorphs[i];
-                    morphModel.SmoothResetTimer += Time.deltaTime;
-                    if(morphModel.SmoothResetTimer >= _timeout)
-                    {
-                        morphModel.SmoothResetTimer = 0f;
-                    }
+                return;
+            }
 
-                    float resetInterpolant = _smoothJsb.val
-                        ? SmoothInterpolant(_morphingSpeedJsf.val, _masterSpeedJsf.val, morphModel.SmoothResetTimer, _loopLengthJsf.val)
-                        : LinearInterpolant(_morphingSpeedJsf.val, _masterSpeedJsf.val);
-                    bool finished = morphModel.SmoothResetValue(resetInterpolant);
-                    if(finished)
-                    {
-                        _awaitingResetMorphs.RemoveAt(i);
-                    }
+            for(int i = _awaitingResetMorphs.Count - 1; i >= 0; i--)
+            {
+                var morphModel = _awaitingResetMorphs[i];
+                morphModel.SmoothResetTimer += deltaTime;
+                if(morphModel.SmoothResetTimer >= _timeout)
+                {
+                    morphModel.SmoothResetTimer = 0f;
+                }
+
+                float resetInterpolant = _smoothJsb.val
+                    ? SmoothInterpolant(deltaTime, _morphingSpeedJsf.val, _masterSpeedJsf.val, morphModel.SmoothResetTimer, _loopLengthJsf.val)
+                    : LinearInterpolant(deltaTime, _morphingSpeedJsf.val, _masterSpeedJsf.val);
+                bool finished = morphModel.SmoothResetValue(resetInterpolant);
+                if(finished)
+                {
+                    _awaitingResetMorphs.RemoveAt(i);
                 }
             }
         }
@@ -1358,11 +1360,11 @@ namespace extraltodeus
             }
         }
 
-        void UpdateMorphs(float timer)
+        void UpdateMorphs(float deltaTime, float timer)
         {
             float interpolant = _smoothJsb.val
-                ? SmoothInterpolant(_morphingSpeedJsf.val, _masterSpeedJsf.val, timer, _loopLengthJsf.val)
-                : LinearInterpolant(_morphingSpeedJsf.val, _masterSpeedJsf.val);
+                ? SmoothInterpolant(deltaTime, _morphingSpeedJsf.val, _masterSpeedJsf.val, timer, _loopLengthJsf.val)
+                : LinearInterpolant(deltaTime, _morphingSpeedJsf.val, _masterSpeedJsf.val);
 
             foreach(var morphModel in _enabledMorphs)
             {
@@ -1370,17 +1372,17 @@ namespace extraltodeus
             }
         }
 
-        static float SmoothInterpolant(float animLength, float masterSpeed, float timer, float animWait)
+        static float SmoothInterpolant(float deltaTime, float morphingSpeed, float masterSpeed, float timer, float loopLength)
         {
-            return Time.deltaTime *
-                animLength *
+            return deltaTime *
+                morphingSpeed *
                 masterSpeed *
-                Mathf.Sin(timer / (animWait / masterSpeed) * Mathf.PI);
+                Mathf.Sin(timer / (loopLength / masterSpeed) * Mathf.PI);
         }
 
-        static float LinearInterpolant(float animLength, float masterSpeed)
+        static float LinearInterpolant(float deltaTime, float morphingSpeed, float masterSpeed)
         {
-            return Time.deltaTime * animLength * masterSpeed;
+            return deltaTime * morphingSpeed * masterSpeed;
         }
 
         static bool CheckIfTriggerExists(CollisionTrigger trig)
