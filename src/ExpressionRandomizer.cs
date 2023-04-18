@@ -327,6 +327,8 @@ namespace extraltodeus
             _randomChancesForTransitionsJsb = NewStorableBool(Name.RANDOM_CHANCES_FOR_TRANSITIONS, true, false);
             _chanceToTriggerJsf = NewStorableFloat(Name.CHANCE_TO_TRIGGER, 75f, 0f, 100f, false);
 
+            _minJsf.setCallbackFunction = value => _maxJsf.val = Mathf.Max(value, _maxJsf.val);
+            _maxJsf.setCallbackFunction = value => _minJsf.val = Mathf.Min(value, _minJsf.val);
             _masterSpeedJsf.setCallbackFunction = value => _timeout = _loopLengthJsf.val / value;
             _loopLengthJsf.setCallbackFunction = value => _timeout = value / _masterSpeedJsf.val;
             _timeout = _loopLengthJsf.val / _masterSpeedJsf.val;
