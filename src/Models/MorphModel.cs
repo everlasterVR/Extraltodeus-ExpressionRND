@@ -40,7 +40,7 @@ namespace ExpressionRND.Models
 
         public void SetTargetValue(float min, float max, float multi, bool resetUsedExpressionsAtLoop)
         {
-            _targetValue = resetUsedExpressionsAtLoop && _currentValue > 0.1f
+            _targetValue = resetUsedExpressionsAtLoop && Mathf.Abs(_currentValue) > 0.1f
                 ? 0f
                 : Utils.RoundToDecimals(Random.Range(min, max) * multi);
         }
