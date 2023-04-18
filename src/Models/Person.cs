@@ -52,7 +52,7 @@ namespace ExpressionRND.Models
 
         public bool GenderChanged()
         {
-            bool changed = _selectedCharacter != _geometry.selectedCharacter;
+            bool changed = _selectedCharacter.isMale != _geometry.selectedCharacter.isMale;
             _selectedCharacter = _geometry.selectedCharacter;
             return changed;
         }
