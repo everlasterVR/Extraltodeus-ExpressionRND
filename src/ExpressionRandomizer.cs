@@ -313,7 +313,7 @@ namespace extraltodeus
             _morphModels.Sort((a, b) => string.Compare(a.Label, b.Label, StringComparison.Ordinal));
 
             _minJsf = NewStorableFloat(Name.MINIMUM_VALUE, -0.15f, -1f, 1.0f);
-            _maxJsf = NewStorableFloat(Name.MAXIMUM_VALUE, 0.35f, -1f, 1.0f);
+            _maxJsf = NewStorableFloat(Name.MAXIMUM_VALUE, 0.30f, -1f, 1.0f);
             _multiJsf = NewStorableFloat(Name.MULTIPLIER, 1f, 0f, 2f);
             _masterSpeedJsf = NewStorableFloat(Name.MASTER_SPEED, 1f, 0.1f, 10f);
             _playJsb = NewStorableBool(Name.PLAY, true);
