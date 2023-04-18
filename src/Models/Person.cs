@@ -34,10 +34,12 @@ namespace ExpressionRND.Models
             Atom.GetStorableByID("AutoExpressions").SetBoolParamValue("enabled", false);
         }
 
-        public IEnumerable<DAZMorph> GetNonBoneMorphs()
+        public IEnumerable<DAZMorph> GetDistinctNonBoneMorphs()
         {
             return _morphsControlUI.GetMorphs()
-                .Where(morph => !morph.hasBoneModificationFormulas && !morph.hasBoneRotationFormulas);
+                .Where(morph => !morph.hasBoneModificationFormulas && !morph.hasBoneRotationFormulas)
+                .GroupBy(morph => new { morph.displayName, morph.region })
+                .Select(group => group.First());
         }
 
         public CollisionTrigger GetCollisionTrigger(string storableId)

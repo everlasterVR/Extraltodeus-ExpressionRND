@@ -296,7 +296,7 @@ namespace extraltodeus
 
             _person = new Person(containingAtom);
 
-            foreach(var morph in _person.GetNonBoneMorphs())
+            foreach(var morph in _person.GetDistinctNonBoneMorphs())
             {
                 if(
                     _poseRegions.Any(morph.region.Contains) &&
