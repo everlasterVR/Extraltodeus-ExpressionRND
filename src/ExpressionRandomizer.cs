@@ -200,6 +200,7 @@ namespace extraltodeus
         string _presetSetOnInit;
         bool _restoringFromJson;
         Person _person;
+        PresetHandler _presetHandler;
         List<MorphModel> _enabledMorphs;
         List<MorphModel> _awaitingResetMorphs;
         readonly List<MorphModel> _morphModels = new List<MorphModel>();
@@ -225,8 +226,6 @@ namespace extraltodeus
         JSONStorableAction _loadEnjoyPresetAction;
         JSONStorableAction _loadPreset1Action;
         JSONStorableAction _loadPreset2Action;
-        JSONStorableUrl _loadPresetWithPathUrlJSON;
-        JSONStorableActionPresetFilePath _loadPresetWithPathJSON;
         JSONStorableStringChooser _collisionTriggerJssc;
         JSONStorableBool _useAndFilterJsb;
         JSONStorableBool _onlyShowActiveJsb;
@@ -295,6 +294,7 @@ namespace extraltodeus
             }
 
             _person = new Person(containingAtom);
+            _presetHandler = new PresetHandler(this);
 
             foreach(var morph in _person.GetDistinctNonBoneMorphs())
             {
@@ -351,19 +351,6 @@ namespace extraltodeus
             });
             _loadPreset1Action = NewStorableAction(Name.LOAD_PRESET_1, () => OnCustomPresetButtonClicked(Name.SLOT_1));
             _loadPreset2Action = NewStorableAction(Name.LOAD_PRESET_2, () => OnCustomPresetButtonClicked(Name.SLOT_2));
-            _loadPresetWithPathUrlJSON = new JSONStorableUrl("Load preset with path url", string.Empty, "json", FileUtils.GetLastBrowseDir())
-            {
-                allowFullComputerBrowse = true,
-                allowBrowseAboveSuggestedPath = true,
-                hideExtension = true,
-                showDirs = true,
-            };
-            _loadPresetWithPathJSON = new JSONStorableActionPresetFilePath(
-                Name.LOAD_PRESET_WITH_PATH,
-                OnLoadPathSelected,
-                _loadPresetWithPathUrlJSON
-            );
-            RegisterPresetFilePathAction(_loadPresetWithPathJSON);
 
             _collisionTriggerJssc = new JSONStorableStringChooser(
                 Name.COLLISION_TRIGGER,
@@ -527,16 +514,8 @@ namespace extraltodeus
             var fileButton = CreateCustomButton(Name.FILE, new Vector2(10 + 410, -118), new Vector2(-969, 52));
             _presetButtons[Name.FILE] = fileButton;
             fileButton.button.onClick.AddListener(() =>
-            {
-                if(_isSavingPreset)
-                {
-                    FileUtils.OpenSavePresetDialog(OnSavePathSelected);
-                }
-                else
-                {
-                    FileUtils.OpenLoadPresetDialog(OnLoadPathSelected);
-                }
-            });
+                (_isSavingPreset ? _presetHandler.savePresetJsu : _presetHandler.loadPresetJsu).FileBrowse()
+            );
 
             CreateSlider(_minJsf);
             CreateSlider(_maxJsf);
@@ -556,49 +535,6 @@ namespace extraltodeus
             CreateAdditionalOptionsUI();
             CreateMoreAdditionalOptionsUI();
             SelectOptionsUI(false);
-        }
-
-        void OnLoadPathSelected(string path)
-        {
-            OnPathSelected(path, () =>
-            {
-                var presetJSON = LoadJSON(path).AsObject;
-                if(presetJSON != null)
-                {
-                    presetJSON["enabled"].AsBool = enabled;
-                    base.RestoreFromJSON(presetJSON);
-                    UpdatePresetButtons(Name.FILE);
-                }
-            });
-        }
-
-        void OnSavePathSelected(string path)
-        {
-            OnPathSelected(path, () =>
-            {
-                if(!path.ToLower().EndsWith(FileUtils.PRESET_EXT.ToLower()))
-                {
-                    path += "." + FileUtils.PRESET_EXT;
-                }
-
-                var jc = GetJSONInternal();
-                jc.Remove("enabled");
-                SaveJSON(jc, path);
-                SuperController.singleton.DoSaveScreenshot(path);
-                UpdatePresetButtons(Name.FILE);
-            });
-        }
-
-        void OnPathSelected(string path, Action saveOrLoadAction)
-        {
-            _isSavingPreset = false;
-            if(string.IsNullOrEmpty(path))
-            {
-                return;
-            }
-
-            FileUtils.UpdateLastBrowseDir(path);
-            saveOrLoadAction();
         }
 
         void OnCustomPresetButtonClicked(string slot)
@@ -633,7 +569,7 @@ namespace extraltodeus
             }
         }
 
-        void UpdatePresetButtons(string selectedPresetName)
+        public void UpdatePresetButtons(string selectedPresetName)
         {
             foreach(var kvp in _presetButtons)
             {
@@ -1439,7 +1375,7 @@ namespace extraltodeus
             return jc;
         }
 
-        JSONClass GetJSONInternal(bool includePhysical = true, bool includeAppearance = true, bool forceStore = false)
+        public JSONClass GetJSONInternal(bool includePhysical = true, bool includeAppearance = true, bool forceStore = false)
         {
             var jc = base.GetJSON(includePhysical, includeAppearance, forceStore);
             foreach(var param in _alwaysStoreFloatParams)
@@ -1521,6 +1457,17 @@ namespace extraltodeus
             }
 
             _restoringFromJson = false;
+        }
+
+        public void RestoreFromPresetJSON(JSONClass jc)
+        {
+            if(initialized != true || _restoringFromJson)
+            {
+                Loggr.Message("Preset file must be loaded after initialization.");
+                return;
+            }
+
+            base.RestoreFromJSON(jc);
         }
 
         void CheckPresetEnabledInJSON(JSONClass jc)

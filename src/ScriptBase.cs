@@ -5,7 +5,7 @@ using UnityEngine.UI;
 class ScriptBase : MVRScript
 {
     UnityEventsListener pluginUIEventsListener { get; set; }
-    public bool? initialized { get; protected set; }
+    protected bool? initialized { get; set; }
 
     // Prevent ScriptBase from showing up as a plugin in Plugins tab
     public override bool ShouldIgnore()
@@ -113,6 +113,21 @@ class ScriptBase : MVRScript
         }
 
         callback();
+    }
+
+    public void DeferSetSaveFileBrowser(string fileExt)
+    {
+        StartCoroutine(SetSaveFileBrowser(fileExt));
+    }
+
+    static IEnumerator SetSaveFileBrowser(string fileExt)
+    {
+        yield return null;
+        var browser = SuperController.singleton.mediaFileBrowserUI;
+        browser.browseVarFilesAsDirectories = false;
+        browser.SetTextEntry(true);
+        browser.fileEntryField.text = $"{((int) (DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalSeconds).ToString()}.{fileExt}";
+        browser.ActivateFileNameField();
     }
 
     protected void OnDestroy()

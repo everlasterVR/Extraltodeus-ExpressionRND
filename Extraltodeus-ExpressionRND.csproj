@@ -87,6 +87,7 @@
     <Compile Include="src\Extensions\UIDynamicTextFieldExtensions.cs" />
     <Compile Include="src\Models\MorphModel.cs" />
     <Compile Include="src\Models\Person.cs" />
+    <Compile Include="src\PresetHandler.cs" />
     <Compile Include="src\ScriptBase.cs" />
     <Compile Include="src\Static\Name.cs" />
     <Compile Include="src\Utils\Colors.cs" />
