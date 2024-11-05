@@ -1,5 +1,5 @@
 ﻿#define ENV_DEVELOPMENT
-using ExpressionRND.Models;
+using everlaster;
 using SimpleJSON;
 using System;
 using System.Collections;
@@ -11,56 +11,39 @@ using UnityEngine.UI;
 
 namespace extraltodeus
 {
-    sealed class ExpressionRandomizer : ScriptBase
+    sealed class ExpressionRandomizer : Script
     {
-        [SuppressMessage("ReSharper", "UnusedMember.Local")]
-        const string VERSION = "0.0.0";
-        const string COLLISION_TRIGGER_DEFAULT_VAL = "None";
-        const string FILTER_DEFAULT_VAL = "Filter morphs...";
+        public override bool ShouldIgnore() => false;
+        public override string className => nameof(ExpressionRandomizer);
 
-        public override bool ShouldIgnore()
+        protected override void OnUIEnabled()
         {
-            return false;
-        }
-
-        bool _uiInitialized;
-
-        protected override Action OnUIEnabled()
-        {
-            return UIEnabled;
-        }
-
-        void UIEnabled()
-        {
-            if(_uiInitialized)
-            {
-                return;
-            }
-
-            CreateLeftUI();
-            CreateRightUI();
-
-            _uiInitialized = true;
             OnFilterChanged();
         }
 
-        protected override Action OnUIDisabled()
+        // TODO deprecate
+        protected override void OnUIDisabled()
         {
-            return UIDisabled;
-        }
-
-        void UIDisabled()
-        {
-            if(_collisionTriggerPopup)
+            if(_collisionTriggerPopup != null)
             {
                 _collisionTriggerPopup.popup.visible = false;
             }
 
-            if(_regionPopup)
+            if(_regionPopup != null)
             {
                 _regionPopup.popup.visible = false;
             }
         }
+
+        protected override void CreateUI()
+        {
+            CreateLeftUI();
+            CreateRightUI();
+            OnFilterChanged();
+        }
+
+        const string COLLISION_TRIGGER_DEFAULT_VAL = "None";
+        const string FILTER_DEFAULT_VAL = "Filter morphs...";
 
         readonly string[] _excludeRegions =
         {
@@ -198,99 +181,48 @@ namespace extraltodeus
         };
 
         string _presetSetOnInit;
-        bool _restoringFromJson;
         Person _person;
         PresetHandler _presetHandler;
         List<MorphModel> _enabledMorphs;
         List<MorphModel> _awaitingResetMorphs;
         readonly List<MorphModel> _morphModels = new List<MorphModel>();
 
-        readonly List<JSONStorableFloat> _alwaysStoreFloatParams = new List<JSONStorableFloat>();
-        readonly List<JSONStorableBool> _alwaysStoreBoolParams = new List<JSONStorableBool>();
+        readonly List<StorableFloat> _alwaysStoreFloatParams = new List<StorableFloat>();
+        readonly List<StorableBool> _alwaysStoreBoolParams = new List<StorableBool>();
 
-        JSONStorableFloat _minJsf;
-        JSONStorableFloat _maxJsf;
-        JSONStorableFloat _multiJsf;
-        JSONStorableFloat _masterSpeedJsf;
-        JSONStorableBool _playJsb;
-        JSONStorableBool _smoothJsb;
-        JSONStorableFloat _loopLengthJsf;
-        JSONStorableFloat _morphingSpeedJsf;
-        JSONStorableBool _resetUsedExpressionsAtLoopJsb;
-        JSONStorableBool _triggerTransitionsManuallyJsb;
-        JSONStorableBool _randomChancesForTransitionsJsb;
-        JSONStorableFloat _chanceToTriggerJsf;
-        JSONStorableAction _triggerTransitionAction;
-        JSONStorableAction _loadIdlePresetAction;
-        JSONStorableAction _loadFlirtPresetAction;
-        JSONStorableAction _loadEnjoyPresetAction;
-        JSONStorableAction _loadPreset1Action;
-        JSONStorableAction _loadPreset2Action;
-        JSONStorableStringChooser _collisionTriggerJssc;
-        JSONStorableBool _useAndFilterJsb;
-        JSONStorableBool _onlyShowActiveJsb;
-        JSONStorableString _pagesJss;
-        JSONStorableStringChooser _regionJssc;
+        StorableFloat _minJsf;
+        StorableFloat _maxJsf;
+        StorableFloat _multiJsf;
+        StorableFloat _masterSpeedJsf;
+        StorableBool _playJsb;
+        StorableBool _smoothJsb;
+        StorableFloat _loopLengthJsf;
+        StorableFloat _morphingSpeedJsf;
+        StorableBool _resetUsedExpressionsAtLoopJsb;
+        StorableBool _triggerTransitionsManuallyJsb;
+        StorableBool _randomChancesForTransitionsJsb;
+        StorableFloat _chanceToTriggerJsf;
+        StorableAction _triggerTransitionAction;
+        StorableAction _loadIdlePresetAction;
+        StorableAction _loadFlirtPresetAction;
+        StorableAction _loadEnjoyPresetAction;
+        StorableAction _loadPreset1Action;
+        StorableAction _loadPreset2Action;
+        StorableStringChooser _collisionTriggerJssc;
+        StorableBool _useAndFilterJsb;
+        StorableBool _onlyShowActiveJsb;
+        StorableString _pagesJss;
+        StorableStringChooser _regionJssc;
 
         InputField _filterInputField;
-        UnityEventsListener _colliderTriggerPopupListener;
-        UnityEventsListener _regionPopupListener;
+        EnabledListener _colliderTriggerPopupListener;
+        EnabledListener _regionPopupListener;
 
-        public override void Init()
+        protected override void OnInit()
         {
-            if(containingAtom.type != "Person")
+            if(!IsValidAtomType(AtomType.PERSON))
             {
-                Loggr.Error($"Add to a Person atom, not {containingAtom.type}.");
-                enabled = false;
                 return;
-            }
-
-            StartCoroutine(InitCo());
-        }
-
-        JSONStorableFloat NewStorableFloat(string name, float val, float min, float max, bool alwaysStore = true)
-        {
-            var jsf = new JSONStorableFloat(name, val, min, max)
-            {
-                storeType = JSONStorableParam.StoreType.Full,
-            };
-            RegisterFloat(jsf);
-            if(alwaysStore)
-            {
-                _alwaysStoreFloatParams.Add(jsf);
-            }
-
-            return jsf;
-        }
-
-        JSONStorableBool NewStorableBool(string name, bool val, bool alwaysStore = true)
-        {
-            var jsb = new JSONStorableBool(name, val)
-            {
-                storeType = JSONStorableParam.StoreType.Full,
-            };
-            RegisterBool(jsb);
-            if(alwaysStore)
-            {
-                _alwaysStoreBoolParams.Add(jsb);
-            }
-
-            return jsb;
-        }
-
-        JSONStorableAction NewStorableAction(string name, JSONStorableAction.ActionCallback callback)
-        {
-            var action = new JSONStorableAction(name, callback);
-            RegisterAction(action);
-            return action;
-        }
-
-        IEnumerator InitCo()
-        {
-            yield return new WaitForEndOfFrame();
-            while(SuperController.singleton.isLoading)
-            {
-                yield return null;
             }
 
             _person = new Person(containingAtom);
@@ -299,9 +231,9 @@ namespace extraltodeus
             foreach(var morph in _person.GetDistinctNonBoneMorphs())
             {
                 if(
-                    _poseRegions.Any(morph.region.Contains) &&
-                    !_excludeMorphNames.Any(morph.displayName.Contains) &&
-                    !_excludeRegions.Any(morph.region.Contains) ||
+                    (_poseRegions.Any(morph.region.Contains) &&
+                        !_excludeMorphNames.Any(morph.displayName.Contains) &&
+                        !_excludeRegions.Any(morph.region.Contains)) ||
                     _includeMorphNames.Any(morph.displayName.Contains)
                 )
                 {
@@ -310,80 +242,12 @@ namespace extraltodeus
                 }
             }
 
-            _morphModels.Sort((a, b) => string.Compare(a.Label, b.Label, StringComparison.Ordinal));
+            _morphModels.Sort((a, b) => string.Compare(a.label, b.label, StringComparison.Ordinal));
 
-            _minJsf = NewStorableFloat(Name.MINIMUM_VALUE, -0.15f, -1f, 1.0f);
-            _maxJsf = NewStorableFloat(Name.MAXIMUM_VALUE, 0.30f, -1f, 1.0f);
-            _multiJsf = NewStorableFloat(Name.MULTIPLIER, 1f, 0f, 2f);
-            _masterSpeedJsf = NewStorableFloat(Name.MASTER_SPEED, 1f, 0.1f, 10f);
-            _playJsb = NewStorableBool(Name.PLAY, true);
-            _playJsb.setCallbackFunction = value => _play = value;
+            SetupStorables();
+
             _play = _playJsb.val;
-            _smoothJsb = NewStorableBool(Name.SMOOTH, true);
-            _loopLengthJsf = NewStorableFloat(Name.LOOP_LENGTH, 2f, 0.1f, 20f);
-            _morphingSpeedJsf = NewStorableFloat(Name.MORPHING_SPEED, 1.0f, 0.1f, 20f);
-            _resetUsedExpressionsAtLoopJsb = NewStorableBool(Name.RESET_USED_EXPRESSIONS_AT_LOOP, true);
-            _triggerTransitionsManuallyJsb = NewStorableBool(Name.TRIGGER_TRANSITIONS_MANUALLY, false, false);
-            _randomChancesForTransitionsJsb = NewStorableBool(Name.RANDOM_CHANCES_FOR_TRANSITIONS, true, false);
-            _chanceToTriggerJsf = NewStorableFloat(Name.CHANCE_TO_TRIGGER, 75f, 0f, 100f, false);
-
-            _minJsf.setCallbackFunction = value => _maxJsf.val = Mathf.Max(value, _maxJsf.val);
-            _maxJsf.setCallbackFunction = value => _minJsf.val = Mathf.Min(value, _minJsf.val);
-            _masterSpeedJsf.setCallbackFunction = value => _timeout = _loopLengthJsf.val / value;
-            _loopLengthJsf.setCallbackFunction = value => _timeout = value / _masterSpeedJsf.val;
             _timeout = _loopLengthJsf.val / _masterSpeedJsf.val;
-
-            _triggerTransitionAction = NewStorableAction(Name.TRIGGER_TRANSITION, NewRandomTargetMorphValues);
-            _loadIdlePresetAction = NewStorableAction(Name.LOAD_IDLE_PRESET, () =>
-            {
-                base.RestoreFromJSON(_presetJSONs[Name.IDLE]);
-                UpdatePresetButtons(Name.IDLE);
-            });
-            _loadFlirtPresetAction = NewStorableAction(Name.LOAD_FLIRT_PRESET, () =>
-            {
-                base.RestoreFromJSON(_presetJSONs[Name.FLIRT]);
-                UpdatePresetButtons(Name.FLIRT);
-            });
-            _loadEnjoyPresetAction = NewStorableAction(Name.LOAD_ENJOY_PRESET, () =>
-            {
-                base.RestoreFromJSON(_presetJSONs[Name.ENJOY]);
-                UpdatePresetButtons(Name.ENJOY);
-            });
-            _loadPreset1Action = NewStorableAction(Name.LOAD_PRESET_1, () => OnCustomPresetButtonClicked(Name.SLOT_1));
-            _loadPreset2Action = NewStorableAction(Name.LOAD_PRESET_2, () => OnCustomPresetButtonClicked(Name.SLOT_2));
-
-            _collisionTriggerJssc = new JSONStorableStringChooser(
-                Name.COLLISION_TRIGGER,
-                new List<string>
-                {
-                    COLLISION_TRIGGER_DEFAULT_VAL,
-                    "LipTrigger",
-                    "MouthTrigger",
-                    "ThroatTrigger",
-                    "lNippleTrigger",
-                    "rNippleTrigger",
-                    "LabiaTrigger",
-                    "VaginaTrigger",
-                    "DeepVaginaTrigger",
-                    "DeeperVaginaTrigger",
-                },
-                COLLISION_TRIGGER_DEFAULT_VAL,
-                Name.COLLISION_TRIGGER
-            );
-            RegisterStringChooser(_collisionTriggerJssc);
-            _collisionTriggerJssc.setCallbackFunction = val =>
-            {
-                if(val != COLLISION_TRIGGER_DEFAULT_VAL)
-                {
-                    _triggerTransitionsManuallyJsb.val = true;
-                    _randomChancesForTransitionsJsb.val = true;
-                    EnsureTriggerActionExists(val);
-                }
-                else
-                {
-                    ClearOtherTriggerActions();
-                }
-            };
             if(_collisionTriggerJssc.val != COLLISION_TRIGGER_DEFAULT_VAL)
             {
                 _triggerTransitionsManuallyJsb.val = true;
@@ -391,32 +255,12 @@ namespace extraltodeus
                 EnsureTriggerActionExists(_collisionTriggerJssc.val);
             }
 
-            _useAndFilterJsb = new JSONStorableBool("AND filter", false)
-            {
-                setCallbackFunction = _ => OnFilterChanged(),
-            };
-            _onlyShowActiveJsb = new JSONStorableBool("Active only", false)
-            {
-                setCallbackFunction = _ => OnFilterChanged(),
-            };
-            _pagesJss = new JSONStorableString("Pages", "");
-
-            var regionOptions = new List<string> { "All" };
-            regionOptions.AddRange(_morphModels.Select(morphModel => morphModel.FinalTwoRegions).Distinct());
-            _regionJssc = new JSONStorableStringChooser(
-                "Region",
-                regionOptions,
-                "All",
-                "Region",
-                (string _) => OnFilterChanged()
-            );
-
             _enabledMorphs = new List<MorphModel>();
             _awaitingResetMorphs = new List<MorphModel>();
             foreach(var morphModel in _morphModels)
             {
-                morphModel.EnabledJsb = NewStorableBool(morphModel.Label, false, false);
-                morphModel.EnabledJsb.setCallbackFunction = on =>
+                morphModel.enabledJsb = NewStorableBool(morphModel.label, false, false);
+                morphModel.enabledJsb.setCallbackFunction = on =>
                 {
                     if(on)
                     {
@@ -444,21 +288,154 @@ namespace extraltodeus
                     }
                 };
 
-                if(morphModel.EnabledJsb.val)
+                if(morphModel.enabledJsb.val)
                 {
                     _enabledMorphs.Add(morphModel);
                 }
             }
 
-            if(!_restoringFromJson)
-            {
-                _presetSetOnInit = Name.IDLE;
-                base.RestoreFromJSON(_presetJSONs[Name.IDLE]);
-            }
-
+            StartCoroutine(SetPresetOnInit());
             SuperController.singleton.onBeforeSceneSaveHandlers += OnBeforeSceneSave;
             SuperController.singleton.onSceneSavedHandlers += OnSceneSaved;
             initialized = true;
+        }
+
+        IEnumerator SetPresetOnInit()
+        {
+            yield return null; // wait for possible RestoreFromJSON
+            _presetSetOnInit = Name.IDLE;
+            base.DoRestoreFromJSON(_presetJSONs[Name.IDLE]);
+        }
+
+        StorableFloat NewStorableFloat(string name, float val, float min, float max, bool alwaysStore = true)
+        {
+            var jsf = new StorableFloat(name, val, min, max);
+            if(alwaysStore)
+            {
+                _alwaysStoreFloatParams.Add(jsf);
+            }
+
+            return jsf;
+        }
+
+        StorableBool NewStorableBool(string name, bool val, bool alwaysStore = true)
+        {
+            var jsb = new StorableBool(name, val);
+            if(alwaysStore)
+            {
+                _alwaysStoreBoolParams.Add(jsb);
+            }
+
+            return jsb;
+        }
+
+        void SetupStorables()
+        {
+            _minJsf = NewStorableFloat(Name.MINIMUM_VALUE, -0.15f, -1f, 1.0f);
+            _minJsf.SetCallback(value => _maxJsf.val = Mathf.Max(value, _maxJsf.val));
+
+            _maxJsf = NewStorableFloat(Name.MAXIMUM_VALUE, 0.30f, -1f, 1.0f);
+            _maxJsf.SetCallback(value => _minJsf.val = Mathf.Min(value, _minJsf.val));
+
+            _multiJsf = NewStorableFloat(Name.MULTIPLIER, 1f, 0f, 2f);
+            _masterSpeedJsf = NewStorableFloat(Name.MASTER_SPEED, 1f, 0.1f, 10f);
+            _masterSpeedJsf.SetCallback(value => _timeout = _loopLengthJsf.val / value);
+
+            _playJsb = NewStorableBool(Name.PLAY, true);
+            _playJsb.SetCallback(value => _play = value);
+
+            _smoothJsb = NewStorableBool(Name.SMOOTH, true);
+            _loopLengthJsf = NewStorableFloat(Name.LOOP_LENGTH, 2f, 0.1f, 20f);
+            _loopLengthJsf.SetCallback(value => _timeout = value / _masterSpeedJsf.val);
+
+            _morphingSpeedJsf = NewStorableFloat(Name.MORPHING_SPEED, 1.0f, 0.1f, 20f);
+            _resetUsedExpressionsAtLoopJsb = NewStorableBool(Name.RESET_USED_EXPRESSIONS_AT_LOOP, true);
+            _triggerTransitionsManuallyJsb = NewStorableBool(Name.TRIGGER_TRANSITIONS_MANUALLY, false, false);
+            _randomChancesForTransitionsJsb = NewStorableBool(Name.RANDOM_CHANCES_FOR_TRANSITIONS, true, false);
+            _chanceToTriggerJsf = NewStorableFloat(Name.CHANCE_TO_TRIGGER, 75f, 0f, 100f, false);
+
+            _triggerTransitionAction = new StorableAction("Trigger transition", NewRandomTargetMorphValues);
+            _loadIdlePresetAction = new StorableAction("Load Idle preset", () =>
+            {
+                base.DoRestoreFromJSON(_presetJSONs[Name.IDLE]);
+                UpdatePresetButtons(Name.IDLE);
+            });
+            _loadFlirtPresetAction = new StorableAction("Load Flirt preset", () =>
+            {
+                base.DoRestoreFromJSON(_presetJSONs[Name.FLIRT]);
+                UpdatePresetButtons(Name.FLIRT);
+            });
+            _loadEnjoyPresetAction = new StorableAction("Load Enjoy preset", () =>
+            {
+                base.DoRestoreFromJSON(_presetJSONs[Name.ENJOY]);
+                UpdatePresetButtons(Name.ENJOY);
+            });
+            _loadPreset1Action = new StorableAction("Load preset 1", () => OnCustomPresetButtonClicked(Name.SLOT_1));
+            _loadPreset2Action = new StorableAction("Load preset 2", () => OnCustomPresetButtonClicked(Name.SLOT_2));
+
+            _collisionTriggerJssc = new StorableStringChooser(
+                Name.COLLISION_TRIGGER,
+                new List<string>
+                {
+                    COLLISION_TRIGGER_DEFAULT_VAL,
+                    "LipTrigger",
+                    "MouthTrigger",
+                    "ThroatTrigger",
+                    "lNippleTrigger",
+                    "rNippleTrigger",
+                    "LabiaTrigger",
+                    "VaginaTrigger",
+                    "DeepVaginaTrigger",
+                    "DeeperVaginaTrigger",
+                },
+                COLLISION_TRIGGER_DEFAULT_VAL
+            );
+            _collisionTriggerJssc.SetCallback(val =>
+            {
+                if(val != COLLISION_TRIGGER_DEFAULT_VAL)
+                {
+                    _triggerTransitionsManuallyJsb.val = true;
+                    _randomChancesForTransitionsJsb.val = true;
+                    EnsureTriggerActionExists(val);
+                }
+                else
+                {
+                    ClearOtherTriggerActions();
+                }
+            });
+
+            _useAndFilterJsb = new StorableBool("AND filter", false);
+            _useAndFilterJsb.SetCallback(OnFilterChanged);
+
+            _onlyShowActiveJsb = new StorableBool("Active only", false);
+            _onlyShowActiveJsb.SetCallback(OnFilterChanged);
+
+            _pagesJss = new StorableString("Pages", "");
+
+            var regionOptions = new List<string> { "All" };
+            regionOptions.AddRange(_morphModels.Select(morphModel => morphModel.finalTwoRegions).Distinct());
+            _regionJssc = new StorableStringChooser("Region", regionOptions, "All");
+            _regionJssc.SetCallback(OnFilterChanged);
+
+            RegisterFloat(_minJsf);
+            RegisterFloat(_maxJsf);
+            RegisterFloat(_multiJsf);
+            RegisterFloat(_masterSpeedJsf);
+            RegisterBool(_playJsb);
+            RegisterBool(_smoothJsb);
+            RegisterFloat(_loopLengthJsf);
+            RegisterFloat(_morphingSpeedJsf);
+            RegisterBool(_resetUsedExpressionsAtLoopJsb);
+            RegisterBool(_triggerTransitionsManuallyJsb);
+            RegisterBool(_randomChancesForTransitionsJsb);
+            RegisterFloat(_chanceToTriggerJsf);
+            RegisterAction(_triggerTransitionAction);
+            RegisterAction(_loadIdlePresetAction);
+            RegisterAction(_loadFlirtPresetAction);
+            RegisterAction(_loadEnjoyPresetAction);
+            RegisterAction(_loadPreset1Action);
+            RegisterAction(_loadPreset2Action);
+            RegisterStringChooser(_collisionTriggerJssc);
         }
 
         readonly Dictionary<string, UIDynamicButton> _presetButtons = new Dictionary<string, UIDynamicButton>();
@@ -559,12 +536,12 @@ namespace extraltodeus
             var presetJSON = _presetJSONs[slot];
             if(presetJSON == null)
             {
-                Loggr.Message($"Preset {slot} is not saved yet.");
+                logBuilder.Message($"Preset {slot} is not saved yet.");
             }
             else
             {
                 presetJSON["enabled"].AsBool = enabled;
-                base.RestoreFromJSON(presetJSON);
+                base.DoRestoreFromJSON(presetJSON);
                 UpdatePresetButtons(slot);
             }
         }
@@ -579,7 +556,7 @@ namespace extraltodeus
 
             if(!string.IsNullOrEmpty(selectedPresetName) && _presetButtons.ContainsKey(selectedPresetName))
             {
-                _presetButtons[selectedPresetName].label = _presetButtons[selectedPresetName].label.Bold();
+                _presetButtons[selectedPresetName].label = $"<b>{_presetButtons[selectedPresetName].label}</b>";
                 _presetButtons[selectedPresetName].SetInvisibleFocusedColor();
             }
         }
@@ -644,21 +621,21 @@ namespace extraltodeus
             /* Back button is higher in hierarchy due to being parented to Content instead of LeftContent.
              * Custom listener is added because _colliderTriggerPopup.popup doesn't have an "onClosePopupHandlers" delegate.
              */
-            _colliderTriggerPopupListener = _collisionTriggerPopup.popup.popupPanel.gameObject.AddComponent<UnityEventsListener>();
-            _colliderTriggerPopupListener.onEnable.AddListener(() =>
+            _colliderTriggerPopupListener = _collisionTriggerPopup.popup.popupPanel.gameObject.AddComponent<EnabledListener>();
+            _colliderTriggerPopupListener.enabledHandlers += () =>
             {
                 _backButton.SetVisible(false);
                 _triggerTransitionButton.SetVisible(false);
-                if(_regionPopup)
+                if(_regionPopup != null)
                 {
                     _regionPopup.popup.visible = false;
                 }
-            });
-            _colliderTriggerPopupListener.onDisable.AddListener(() =>
+            };
+            _colliderTriggerPopupListener.disabledHandlers += () =>
             {
                 _backButton.SetVisible(true);
                 _triggerTransitionButton.SetVisible(true);
-            });
+            };
         }
 
         void SelectOptionsUI(bool alt)
@@ -700,7 +677,7 @@ namespace extraltodeus
             {
                 foreach(var morphModel in _morphModels)
                 {
-                    morphModel.EnabledJsb.val = false;
+                    morphModel.enabledJsb.val = false;
                 }
             });
 
@@ -713,7 +690,7 @@ namespace extraltodeus
                 _playJsb.val = false;
                 foreach(var morphModel in _morphModels)
                 {
-                    if(morphModel.EnabledJsb.val)
+                    if(morphModel.enabledJsb.val)
                     {
                         morphModel.ZeroValue();
                     }
@@ -735,7 +712,7 @@ namespace extraltodeus
             });
 
             var filterInputPointerListener = _filterInputField.gameObject.AddComponent<PointerUpDownListener>();
-            filterInputPointerListener.PointerDownAction = () =>
+            filterInputPointerListener.pointerDownHandlers += _ =>
             {
                 _preventFilterChangeCallback = true;
                 if(_filterInputField.text == FILTER_DEFAULT_VAL)
@@ -756,17 +733,17 @@ namespace extraltodeus
             /* Clear button is higher in hierarchy due to being parented to Content instead of LeftContent.
              * Custom listener is added because _colliderTriggerPopup.popup doesn't have an "onClosePopupHandlers" delegate.
              */
-            _regionPopupListener = _regionPopup.popup.popupPanel.gameObject.AddComponent<UnityEventsListener>();
-            _regionPopupListener.onEnable.AddListener(() =>
+            _regionPopupListener = _regionPopup.popup.popupPanel.gameObject.AddComponent<EnabledListener>();
+            _regionPopupListener.enabledHandlers += () =>
             {
-                if(_collisionTriggerPopup)
+                if(_collisionTriggerPopup != null)
                 {
                     _collisionTriggerPopup.popup.visible = false;
                 }
 
                 clearButton.SetVisible(false);
-            });
-            _regionPopupListener.onDisable.AddListener(() => clearButton.SetVisible(true));
+            };
+            _regionPopupListener.disabledHandlers += () => clearButton.SetVisible(true);
 
             // CreateDevSliders();
 
@@ -774,12 +751,12 @@ namespace extraltodeus
             {
                 if(_morphModels.Count < ITEMS_PER_PAGE)
                 {
-                    Loggr.Message($"Fatal: less than {ITEMS_PER_PAGE} morphs found.");
+                    logBuilder.Message($"Fatal: less than {ITEMS_PER_PAGE} morphs found.");
                     break;
                 }
 
                 /* Morph toggles initialized with the storables of the first 10 morph models. Should be always correct on init. */
-                _morphToggles[i] = CreateToggle(_morphModels[i].EnabledJsb, true);
+                _morphToggles[i] = CreateToggle(_morphModels[i].enabledJsb, true);
             }
 
             _prevPageButton = CreateCustomButton("< Prev", new Vector2(549, -1229), new Vector2(-885, 52));
@@ -977,7 +954,7 @@ namespace extraltodeus
             var tfLayout = filterTextField.GetComponent<LayoutElement>();
             tfLayout.preferredHeight = tfLayout.minHeight = 53f;
             filterTextField.height = 53f;
-            filterTextField.DisableScrollOnText();
+            filterTextField.DisableScroll();
             _filterInputField = filterTextField.gameObject.AddComponent<InputField>();
             _filterInputField.textComponent = filterTextField.UItext;
             _filterInputField.lineType = InputField.LineType.SingleLine;
@@ -1018,7 +995,7 @@ namespace extraltodeus
 
         void OnFilterChanged()
         {
-            if(!_filterInputField || _preventFilterChangeCallback || !_uiInitialized)
+            if(_filterInputField == null || _preventFilterChangeCallback)
             {
                 return;
             }
@@ -1045,7 +1022,7 @@ namespace extraltodeus
             {
                 var morphModel = _morphModels[i];
 
-                if(_onlyShowActiveJsb.val && !morphModel.EnabledJsb.val)
+                if(_onlyShowActiveJsb.val && !morphModel.enabledJsb.val)
                 {
                     continue;
                 }
@@ -1054,14 +1031,14 @@ namespace extraltodeus
 
                 if(useTextFilter)
                 {
-                    int hits = patterns.Count(morphModel.Label.ToLower().Contains);
-                    if(!_useAndFilterJsb.val && hits > 0 || _useAndFilterJsb.val && hits == patterns.Count)
+                    int hits = patterns.Count(morphModel.label.ToLower().Contains);
+                    if((!_useAndFilterJsb.val && hits > 0) || (_useAndFilterJsb.val && hits == patterns.Count))
                     {
                         match = true;
                     }
                 }
 
-                if(match && (includeAll || morphModel.FinalTwoRegions == _regionJssc.val))
+                if(match && (includeAll || morphModel.finalTwoRegions == _regionJssc.val))
                 {
                     _filteredIndices.Add(i);
                 }
@@ -1095,15 +1072,15 @@ namespace extraltodeus
                 {
                     onPageCount++;
                     var morphToggle = _morphToggles[i % ITEMS_PER_PAGE];
-                    toggleToJSONStorableBool[morphToggle] = morphModel.EnabledJsb;
-                    morphToggle.label = _regionJssc.val == "All" ? morphModel.Label : morphModel.DisplayName;
-                    morphModel.EnabledJsb.toggle = morphToggle.toggle;
-                    morphToggle.toggle.isOn = morphModel.EnabledJsb.val;
-                    morphToggle.toggle.onValueChanged.AddListener(val => morphModel.EnabledJsb.val = val);
+                    toggleToJSONStorableBool[morphToggle] = morphModel.enabledJsb;
+                    morphToggle.label = _regionJssc.val == "All" ? morphModel.label : morphModel.displayName;
+                    morphModel.enabledJsb.toggle = morphToggle.toggle;
+                    morphToggle.toggle.isOn = morphModel.enabledJsb.val;
+                    morphToggle.toggle.onValueChanged.AddListener(val => morphModel.enabledJsb.val = val);
                 }
                 else
                 {
-                    morphModel.EnabledJsb.toggle = null;
+                    morphModel.enabledJsb.toggle = null;
                 }
             }
 
@@ -1113,12 +1090,12 @@ namespace extraltodeus
                 _morphToggles[i].SetVisible(false);
             }
 
-            if(_prevPageButton)
+            if(_prevPageButton != null)
             {
                 _prevPageButton.button.interactable = _currentPage > 0;
             }
 
-            if(_nextPageButton)
+            if(_nextPageButton != null)
             {
                 _nextPageButton.button.interactable = _currentPage < _totalPages - 1;
             }
@@ -1130,7 +1107,7 @@ namespace extraltodeus
 
         void Update()
         {
-            if(!enabled || _savingScene || initialized != true || _restoringFromJson)
+            if(!enabled || _savingScene || initialized != true)
             {
                 return;
             }
@@ -1160,7 +1137,7 @@ namespace extraltodeus
             }
             catch(Exception e)
             {
-                Loggr.Message($"{nameof(Update)} error: {e}");
+                logBuilder.Exception(e);
                 enabled = false;
             }
         }
@@ -1186,7 +1163,7 @@ namespace extraltodeus
 
                 if(_person.GenderChanged())
                 {
-                    Loggr.Message("Gender changed - reload the plugin (opposite gender morphs are loaded).");
+                    logBuilder.Message("Gender changed - reload the plugin (opposite gender morphs are loaded).");
                     enabled = false;
                     StartCoroutine(WaitForGenderRestored());
                 }
@@ -1196,7 +1173,7 @@ namespace extraltodeus
         void EnsureTriggerActionExists(string triggerName)
         {
             var collisionTrigger = _person.GetCollisionTrigger(triggerName);
-            if(!collisionTrigger || collisionTrigger.trigger == null)
+            if(collisionTrigger == null || collisionTrigger.trigger == null)
             {
                 return;
             }
@@ -1248,7 +1225,7 @@ namespace extraltodeus
             }
 
             var collisionTrigger = _person.GetCollisionTrigger(triggerName);
-            if(collisionTrigger)
+            if(collisionTrigger != null)
             {
                 var triggerJSON = collisionTrigger.trigger.GetJSON();
                 var startActions = triggerJSON["startActions"].AsArray;
@@ -1320,15 +1297,15 @@ namespace extraltodeus
             for(int i = _awaitingResetMorphs.Count - 1; i >= 0; i--)
             {
                 var morphModel = _awaitingResetMorphs[i];
-                if(morphModel.SmoothResetTimer >= _timeout)
+                if(morphModel.smoothResetTimer >= _timeout)
                 {
-                    morphModel.SmoothResetTimer = 0f;
+                    morphModel.smoothResetTimer = 0f;
                 }
 
-                morphModel.SmoothResetTimer += deltaTime;
+                morphModel.smoothResetTimer += deltaTime;
 
                 float resetInterpolant = _smoothJsb.val
-                    ? SmoothInterpolant(deltaTime, _morphingSpeedJsf.val, _masterSpeedJsf.val, morphModel.SmoothResetTimer, _loopLengthJsf.val)
+                    ? SmoothInterpolant(deltaTime, _morphingSpeedJsf.val, _masterSpeedJsf.val, morphModel.smoothResetTimer, _loopLengthJsf.val)
                     : LinearInterpolant(deltaTime, _morphingSpeedJsf.val, _masterSpeedJsf.val, _loopLengthJsf.val);
                 bool finished = morphModel.SmoothResetValue(resetInterpolant);
                 if(finished)
@@ -1342,7 +1319,7 @@ namespace extraltodeus
         {
             foreach(var morphModel in _morphModels)
             {
-                if(morphModel.EnabledJsb.val)
+                if(morphModel.enabledJsb.val)
                 {
                     morphModel.ResetToInitial();
                 }
@@ -1391,7 +1368,7 @@ namespace extraltodeus
             return jc;
         }
 
-        public override void RestoreFromJSON(
+        protected override void DoRestoreFromJSON(
             JSONClass jc,
             bool restorePhysical = true,
             bool restoreAppearance = true,
@@ -1399,37 +1376,6 @@ namespace extraltodeus
             bool setMissingToDefault = true
         )
         {
-            _restoringFromJson = true;
-
-            StartCoroutine(
-                RestoreFromJSONCo(
-                    jc,
-                    restorePhysical,
-                    restoreAppearance,
-                    presetAtoms,
-                    setMissingToDefault
-                )
-            );
-        }
-
-        IEnumerator RestoreFromJSONCo(
-            JSONClass jc,
-            bool restorePhysical,
-            bool restoreAppearance,
-            JSONArray presetAtoms,
-            bool setMissingToDefault
-        )
-        {
-            while(initialized == null)
-            {
-                yield return null;
-            }
-
-            if(initialized == false)
-            {
-                yield break;
-            }
-
             if(!jc.Keys.Any())
             {
                 /* When migrating from legacy JSON, for some reason jc == {} if the storable was not present in the original save file,
@@ -1437,12 +1383,12 @@ namespace extraltodeus
                  *
                  * In this case, the restore is skipped and default Idle preset is enabled instead.
                  */
-                base.RestoreFromJSON(_presetJSONs[Name.IDLE]);
+                base.DoRestoreFromJSON(_presetJSONs[Name.IDLE]);
                 _presetSetOnInit = Name.IDLE;
             }
             else
             {
-                base.RestoreFromJSON(jc, restorePhysical, restoreAppearance, presetAtoms, setMissingToDefault);
+                base.DoRestoreFromJSON(jc, restorePhysical, restoreAppearance, presetAtoms, setMissingToDefault);
                 if(jc.HasKey(Name.PRESET_1))
                 {
                     _presetJSONs[Name.SLOT_1] = jc[Name.PRESET_1].AsObject;
@@ -1455,19 +1401,17 @@ namespace extraltodeus
 
                 CheckPresetEnabledInJSON(jc);
             }
-
-            _restoringFromJson = false;
         }
 
         public void RestoreFromPresetJSON(JSONClass jc)
         {
-            if(initialized != true || _restoringFromJson)
+            if(initialized != true)
             {
-                Loggr.Message("Preset file must be loaded after initialization.");
+                logBuilder.Message("Preset file must be loaded after initialization."); // TODO redundant?
                 return;
             }
 
-            base.RestoreFromJSON(jc);
+            base.DoRestoreFromJSON(jc);
         }
 
         void CheckPresetEnabledInJSON(JSONClass jc)
@@ -1567,38 +1511,18 @@ namespace extraltodeus
             _savingScene = false;
         }
 
-        void OnDisable()
+        protected override void DoDisable()
         {
-            if(initialized != true)
-            {
-                return;
-            }
-
-            try
-            {
-                ResetActiveMorphs();
-            }
-            catch(Exception e)
-            {
-                Loggr.Message($"{nameof(OnDisable)} error: " + e);
-            }
+            ResetActiveMorphs();
         }
 
-        new void OnDestroy()
+        protected override void DoDestroy()
         {
-            try
-            {
-                base.OnDestroy();
-                Destroy(_colliderTriggerPopupListener);
-                ClearTriggers(_collisionTriggerJssc.val);
-                ClearOtherTriggerActions();
-                SuperController.singleton.onSceneSavedHandlers -= OnSceneSaved;
-                SuperController.singleton.onBeforeSceneSaveHandlers -= OnBeforeSceneSave;
-            }
-            catch(Exception e)
-            {
-                Loggr.Message($"{nameof(OnDestroy)} error: " + e);
-            }
+            Destroy(_colliderTriggerPopupListener);
+            ClearTriggers(_collisionTriggerJssc.val);
+            ClearOtherTriggerActions();
+            SuperController.singleton.onSceneSavedHandlers -= OnSceneSaved;
+            SuperController.singleton.onBeforeSceneSaveHandlers -= OnBeforeSceneSave;
         }
 
         #if ENV_DEVELOPMENT
@@ -1644,28 +1568,28 @@ namespace extraltodeus
 
             _posX.setCallbackFunction = value =>
             {
-                if(rectTransform)
+                if(rectTransform != null)
                 {
                     rectTransform.anchoredPosition = new Vector2(value, _posY.val);
                 }
             };
             _posY.setCallbackFunction = value =>
             {
-                if(rectTransform)
+                if(rectTransform != null)
                 {
                     rectTransform.anchoredPosition = new Vector2(_posX.val, value);
                 }
             };
             _sizeX.setCallbackFunction = value =>
             {
-                if(rectTransform)
+                if(rectTransform != null)
                 {
                     rectTransform.sizeDelta = new Vector2(value, _sizeY.val);
                 }
             };
             _sizeY.setCallbackFunction = value =>
             {
-                if(rectTransform)
+                if(rectTransform != null)
                 {
                     rectTransform.sizeDelta = new Vector2(_sizeX.val, value);
                 }

@@ -82,32 +82,22 @@
         </Reference>
     </ItemGroup>
     <ItemGroup>
+        <Compile Include="Common\src\**\*.cs"/>
         <Compile Include="ExpressionRandomizer_1.7_Timbo.cs" />
-        <Compile Include="src\Components\PointerUpDownListener.cs" />
-        <Compile Include="src\Components\UnityEventsListener.cs" />
+        <Compile Include="src\Extensions.cs" />
+        <Compile Include="src\Resources.cs" />
         <Compile Include="src\ExpressionRandomizer.cs" />
-        <Compile Include="src\Extensions\StringExtensions.cs" />
-        <Compile Include="src\Extensions\UIDynamicButtonExtensions.cs" />
-        <Compile Include="src\Extensions\UIDynamicExtensions.cs" />
-        <Compile Include="src\Extensions\UIDynamicTextFieldExtensions.cs" />
         <Compile Include="src\Models\MorphModel.cs" />
         <Compile Include="src\Models\Person.cs" />
         <Compile Include="src\PresetHandler.cs" />
-        <Compile Include="src\ScriptBase.cs" />
-        <Compile Include="src\Static\Name.cs" />
-        <Compile Include="src\Utils\Colors.cs" />
-        <Compile Include="src\Utils\FileUtils.cs" />
-        <Compile Include="src\Utils\Loggr.cs" />
         <Compile Include="src\Utils\Utils.cs" />
     </ItemGroup>
     <ItemGroup>
-        <None Include=".gitignore" />
-        <None Include="meta.json" />
-        <None Include="README.md" />
-    </ItemGroup>
-    <ItemGroup>
-        <Content Include="scripts\generate_cslist.sh" />
-        <Content Include="scripts\package.sh" />
+        <Content Include="Common\scripts\*.sh"/>
+        <Content Include=".gitignore" />
+        <Content Include="ExpressionRandomizer.cslist" />
+        <Content Include="meta.json" />
+        <Content Include="README.md" />
     </ItemGroup>
     <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

@@ -4,7 +4,7 @@ Hub resource: https://hub.virtamate.com/resources/expression-randomizer-by-extra
 
 ## License
 
-[MIT](LICENSE)
+[GPLv3](LICENSE)
 
 ## Credit
 

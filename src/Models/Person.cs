@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 
-namespace ExpressionRND.Models
+namespace everlaster
 {
     sealed class Person
     {

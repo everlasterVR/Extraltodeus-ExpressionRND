@@ -1,5 +1,5 @@
 {
-  "licenseType" : "FC",
+  "licenseType" : "CC BY-SA",
   "creatorName" : "VamTimbo",
   "packageName" : "Extraltodeus-ExpressionRND",
   "standardReferenceVersionOption" : "Latest",
@@ -8,7 +8,7 @@
   "credits" : "Original plugin by extraltodeus. Improved upon by hazmhox and everlaster",
   "instructions" : "Place onto person object. Select morphs and options.",
   "promotionalLink" : "",
-  "programVersion" : "1.22.0.1",
+  "programVersion" : "1.22.0.3",
   "contentList" : [
     "Custom/Scripts/__Frequently Used/ExpressionRandomizer_1.7_Timbo.cs",
     "Custom/Scripts/everlaster/Extraltodeus-ExpressionRND/ExpressionRandomizer.cslist",

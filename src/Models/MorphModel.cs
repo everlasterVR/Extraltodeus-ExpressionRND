@@ -1,15 +1,15 @@
 ﻿using UnityEngine;
 
-namespace ExpressionRND.Models
+namespace everlaster
 {
     sealed class MorphModel
     {
         readonly DAZMorph _morph;
-        public string DisplayName { get; }
-        public string FinalTwoRegions { get; }
-        public string Label { get; }
-        public JSONStorableBool EnabledJsb { get; set; }
-        public float SmoothResetTimer { get; set; }
+        public string displayName { get; }
+        public string finalTwoRegions { get; }
+        public string label { get; }
+        public JSONStorableBool enabledJsb { get; set; }
+        public float smoothResetTimer { get; set; }
 
         float _previousValue;
         float _initialValue;
@@ -19,22 +19,22 @@ namespace ExpressionRND.Models
         public MorphModel(DAZMorph morph, string displayName, string region)
         {
             _morph = morph;
-            DisplayName = displayName;
+            this.displayName = displayName;
 
             string[] regions = region.Split('/');
             int lastIndex = regions.Length - 1;
             int secondLastIndex = lastIndex - 1;
             string finalRegion = lastIndex > -1 ? regions[lastIndex] : "";
-            FinalTwoRegions = secondLastIndex > -1 ? regions[secondLastIndex] + "/" + finalRegion : finalRegion;
-            Label = finalRegion + "/" + DisplayName;
+            finalTwoRegions = secondLastIndex > -1 ? regions[secondLastIndex] + "/" + finalRegion : finalRegion;
+            label = finalRegion + "/" + this.displayName;
             _initialValue = _morph.morphValue;
-            _currentValue = Utils.RoundToDecimals(_morph.morphValue);
+            _currentValue = Calc.RoundToDecimals(_morph.morphValue);
         }
 
         public void CalculateValue(float interpolant)
         {
             _previousValue = _currentValue;
-            _currentValue = Utils.RoundToDecimals(Mathf.Lerp(_currentValue, _targetValue, interpolant));
+            _currentValue = Calc.RoundToDecimals(Mathf.Lerp(_currentValue, _targetValue, interpolant));
             _morph.morphValue = _currentValue;
         }
 
@@ -42,18 +42,18 @@ namespace ExpressionRND.Models
         {
             _targetValue = resetUsedExpressionsAtLoop && Mathf.Abs(_currentValue) > 0.1f
                 ? 0f
-                : Utils.RoundToDecimals(Random.Range(min, max) * multi);
+                : Calc.RoundToDecimals(Random.Range(min, max) * multi);
         }
 
         public void UpdateInitialValue()
         {
-            _initialValue = Utils.RoundToDecimals(_morph.morphValue);
+            _initialValue = Calc.RoundToDecimals(_morph.morphValue);
         }
 
         public bool SmoothResetValue(float interpolant)
         {
             _previousValue = _currentValue;
-            _currentValue = Utils.RoundToDecimals(Mathf.Lerp(_currentValue, _initialValue, interpolant));
+            _currentValue = Calc.RoundToDecimals(Mathf.Lerp(_currentValue, _initialValue, interpolant));
             /* Could get easily stuck to non-initial value otherwise... not sure why exactly */
             bool finished = Mathf.Abs(_currentValue - _initialValue) < 0.02f && Mathf.Abs(_previousValue - _currentValue) < 0.002f;
             if(finished)
