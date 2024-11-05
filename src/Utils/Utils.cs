@@ -1,4 +1,4 @@
-﻿namespace everlaster
+namespace everlaster
 {
     static partial class Utils
     {
