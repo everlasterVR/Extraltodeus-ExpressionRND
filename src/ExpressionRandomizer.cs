@@ -21,20 +21,6 @@ namespace extraltodeus
             OnFilterChanged();
         }
 
-        // TODO deprecate
-        protected override void OnUIDisabled()
-        {
-            if(_collisionTriggerPopup != null)
-            {
-                _collisionTriggerPopup.popup.visible = false;
-            }
-
-            if(_regionPopup != null)
-            {
-                _regionPopup.popup.visible = false;
-            }
-        }
-
         protected override void CreateUI()
         {
             CreateLeftUI();
@@ -626,10 +612,6 @@ namespace extraltodeus
             {
                 _backButton.SetVisible(false);
                 _triggerTransitionButton.SetVisible(false);
-                if(_regionPopup != null)
-                {
-                    _regionPopup.popup.visible = false;
-                }
             };
             _colliderTriggerPopupListener.disabledHandlers += () =>
             {
@@ -712,7 +694,7 @@ namespace extraltodeus
             });
 
             var filterInputPointerListener = _filterInputField.gameObject.AddComponent<PointerUpDownListener>();
-            filterInputPointerListener.pointerDownHandlers += _ =>
+            filterInputPointerListener.downHandlers += _ =>
             {
                 _preventFilterChangeCallback = true;
                 if(_filterInputField.text == FILTER_DEFAULT_VAL)
@@ -734,15 +716,7 @@ namespace extraltodeus
              * Custom listener is added because _colliderTriggerPopup.popup doesn't have an "onClosePopupHandlers" delegate.
              */
             _regionPopupListener = _regionPopup.popup.popupPanel.gameObject.AddComponent<EnabledListener>();
-            _regionPopupListener.enabledHandlers += () =>
-            {
-                if(_collisionTriggerPopup != null)
-                {
-                    _collisionTriggerPopup.popup.visible = false;
-                }
-
-                clearButton.SetVisible(false);
-            };
+            _regionPopupListener.enabledHandlers += () => clearButton.SetVisible(false);
             _regionPopupListener.disabledHandlers += () => clearButton.SetVisible(true);
 
             // CreateDevSliders();
@@ -848,27 +822,30 @@ namespace extraltodeus
 
         UIDynamicPopup CreateCollisionTriggerPopup()
         {
-            var popup = CreateScrollablePopup(_collisionTriggerJssc);
-            popup.labelTextColor = Color.black;
-            var uiPopup = popup.popup;
-            popup.popupPanelHeight = 640f;
-            uiPopup.popupPanel.offsetMin += new Vector2(0, popup.popupPanelHeight + 60);
-            uiPopup.popupPanel.offsetMax += new Vector2(0, popup.popupPanelHeight + 60);
-            return popup;
+            var uiDynamic = CreateScrollablePopup(_collisionTriggerJssc);
+            uiDynamic.labelTextColor = Color.black;
+            uiDynamic.popup.selectColor = Colors.paleBlue;
+            var uiPopup = uiDynamic.popup;
+            uiDynamic.popupPanelHeight = 640f;
+            uiPopup.popupPanel.offsetMin += new Vector2(0, uiDynamic.popupPanelHeight + 60);
+            uiPopup.popupPanel.offsetMax += new Vector2(0, uiDynamic.popupPanelHeight + 60);
+            RegisterPopup(uiDynamic.popup);
+            return uiDynamic;
         }
 
         /* ty acidbubbles -everlaster */
         UIDynamicPopup CreateRegionPopup()
         {
-            var popup = CreateFilterablePopup(_regionJssc, true);
-            popup.labelTextColor = Color.black;
-            var uiPopup = popup.popup;
+            var uiDynamic = CreateFilterablePopup(_regionJssc, true);
+            uiDynamic.labelTextColor = Color.black;
+            uiDynamic.popup.selectColor = Colors.paleBlue;
+            var uiPopup = uiDynamic.popup;
 
             uiPopup.labelText.alignment = TextAnchor.UpperCenter;
             uiPopup.labelText.GetComponent<RectTransform>().anchorMax = new Vector2(0, 0.89f);
 
             {
-                var btn = Instantiate(manager.configurableButtonPrefab, popup.transform, false);
+                var btn = Instantiate(manager.configurableButtonPrefab, uiDynamic.transform, false);
                 Destroy(btn.GetComponent<LayoutElement>());
                 btn.GetComponent<UIDynamicButton>().label = "<";
                 btn.GetComponent<UIDynamicButton>()
@@ -890,7 +867,7 @@ namespace extraltodeus
             }
 
             {
-                var btn = Instantiate(manager.configurableButtonPrefab, popup.transform, false);
+                var btn = Instantiate(manager.configurableButtonPrefab, uiDynamic.transform, false);
                 Destroy(btn.GetComponent<LayoutElement>());
                 btn.GetComponent<UIDynamicButton>().label = ">";
                 btn.GetComponent<UIDynamicButton>()
@@ -913,8 +890,9 @@ namespace extraltodeus
 
             const float maxHeight = 820f;
             float height = 50f + _regionJssc.choices.Count * 60f;
-            popup.popupPanelHeight = height > maxHeight ? maxHeight : height;
-            return popup;
+            uiDynamic.popupPanelHeight = height > maxHeight ? maxHeight : height;
+            RegisterPopup(uiDynamic.popup);
+            return uiDynamic;
         }
 
         void CreatePageTextField()
@@ -1107,7 +1085,7 @@ namespace extraltodeus
 
         void Update()
         {
-            if(!enabled || _savingScene || initialized != true)
+            if(_savingScene || initialized != true)
             {
                 return;
             }

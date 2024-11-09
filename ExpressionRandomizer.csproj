@@ -7,8 +7,8 @@
         <ProjectGuid>{95281184-784C-4896-B641-F4B77D7D9CA0}</ProjectGuid>
         <OutputType>Library</OutputType>
         <AppDesignerFolder>Properties</AppDesignerFolder>
-        <RootNamespace>Extraltodeus-ExpressionRND</RootNamespace>
-        <AssemblyName>Extraltodeus-ExpressionRND</AssemblyName>
+        <RootNamespace>ExpressionRandomizer</RootNamespace>
+        <AssemblyName>ExpressionRandomizer</AssemblyName>
         <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
         <FileAlignment>512</FileAlignment>
         <LangVersion>6</LangVersion>
@@ -93,6 +93,7 @@
         <Compile Include="src\Utils\Utils.cs" />
     </ItemGroup>
     <ItemGroup>
+        <Content Include="Common.cslist" />
         <Content Include="Common\scripts\*.sh"/>
         <Content Include=".gitignore" />
         <Content Include="ExpressionRandomizer.cslist" />
