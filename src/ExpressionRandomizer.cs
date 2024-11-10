@@ -16,16 +16,12 @@ namespace extraltodeus
         public override bool ShouldIgnore() => false;
         public override string className => nameof(ExpressionRandomizer);
 
-        protected override void OnUIEnabled()
-        {
-            OnFilterChanged();
-        }
-
         protected override void CreateUI()
         {
             CreateLeftUI();
             CreateRightUI();
             OnFilterChanged();
+            RegisterOnUIEnabled(OnFilterChanged);
         }
 
         const string COLLISION_TRIGGER_DEFAULT_VAL = "None";
@@ -289,8 +285,8 @@ namespace extraltodeus
         IEnumerator SetPresetOnInit()
         {
             yield return null; // wait for possible RestoreFromJSON
+            RestoreFromPresetJSON(Name.IDLE);
             _presetSetOnInit = Name.IDLE;
-            base.DoRestoreFromJSON(_presetJSONs[Name.IDLE]);
         }
 
         StorableFloat NewStorableFloat(string name, float val, float min, float max, bool alwaysStore = true)
@@ -343,17 +339,17 @@ namespace extraltodeus
             _triggerTransitionAction = new StorableAction("Trigger transition", NewRandomTargetMorphValues);
             _loadIdlePresetAction = new StorableAction("Load Idle preset", () =>
             {
-                base.DoRestoreFromJSON(_presetJSONs[Name.IDLE]);
+                RestoreFromPresetJSON(Name.IDLE);
                 UpdatePresetButtons(Name.IDLE);
             });
             _loadFlirtPresetAction = new StorableAction("Load Flirt preset", () =>
             {
-                base.DoRestoreFromJSON(_presetJSONs[Name.FLIRT]);
+                RestoreFromPresetJSON(Name.FLIRT);
                 UpdatePresetButtons(Name.FLIRT);
             });
             _loadEnjoyPresetAction = new StorableAction("Load Enjoy preset", () =>
             {
-                base.DoRestoreFromJSON(_presetJSONs[Name.ENJOY]);
+                RestoreFromPresetJSON(Name.ENJOY);
                 UpdatePresetButtons(Name.ENJOY);
             });
             _loadPreset1Action = new StorableAction("Load preset 1", () => OnCustomPresetButtonClicked(Name.SLOT_1));
@@ -527,7 +523,7 @@ namespace extraltodeus
             else
             {
                 presetJSON["enabled"].AsBool = enabled;
-                base.DoRestoreFromJSON(presetJSON);
+                RestoreFromPresetJSON(presetJSON);
                 UpdatePresetButtons(slot);
             }
         }
@@ -1346,12 +1342,16 @@ namespace extraltodeus
             return jc;
         }
 
+        void RestoreFromPresetJSON(string key) => RestoreFromPresetJSON(_presetJSONs[key]);
+
+        public void RestoreFromPresetJSON(JSONClass jc) => base.DoRestoreFromJSON(jc, true, true, null, true);
+
         protected override void DoRestoreFromJSON(
             JSONClass jc,
-            bool restorePhysical = true,
-            bool restoreAppearance = true,
-            JSONArray presetAtoms = null,
-            bool setMissingToDefault = true
+            bool restorePhysical,
+            bool restoreAppearance,
+            JSONArray presetAtoms,
+            bool setMissingToDefault
         )
         {
             if(!jc.Keys.Any())
@@ -1361,7 +1361,7 @@ namespace extraltodeus
                  *
                  * In this case, the restore is skipped and default Idle preset is enabled instead.
                  */
-                base.DoRestoreFromJSON(_presetJSONs[Name.IDLE]);
+                RestoreFromPresetJSON(Name.IDLE);
                 _presetSetOnInit = Name.IDLE;
             }
             else
@@ -1379,17 +1379,6 @@ namespace extraltodeus
 
                 CheckPresetEnabledInJSON(jc);
             }
-        }
-
-        public void RestoreFromPresetJSON(JSONClass jc)
-        {
-            if(initialized != true)
-            {
-                logBuilder.Message("Preset file must be loaded after initialization."); // TODO redundant?
-                return;
-            }
-
-            base.DoRestoreFromJSON(jc);
         }
 
         void CheckPresetEnabledInJSON(JSONClass jc)
